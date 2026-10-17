@@ -13,15 +13,20 @@ namespace Wigglebites.Editor
         private const string DefaultBundlePath = "Builds/Android/Wigglebites.aab";
 
         [MenuItem("Wigglebites/Build Android/Development APK")]
-        public static void BuildDevelopmentApk() => Build(development: true, appBundle: false);
+        public static void BuildDevelopmentApk() => Build(development: true, appBundle: false, requireReleaseSigning: false);
+
+        [MenuItem("Wigglebites/Build Android/Validation APK")]
+        public static void BuildValidation() => Build(development: false, appBundle: false, requireReleaseSigning: false);
 
         [MenuItem("Wigglebites/Build Android/Release")]
         public static void BuildRelease() => Build(
             development: false,
-            appBundle: string.Equals(Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_AAB"), "1", StringComparison.Ordinal));
+            appBundle: string.Equals(Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_AAB"), "1", StringComparison.Ordinal),
+            requireReleaseSigning: true);
 
-        private static void Build(bool development, bool appBundle)
+        private static void Build(bool development, bool appBundle, bool requireReleaseSigning)
         {
+            if (requireReleaseSigning) ValidateReleaseSigning();
             var scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled && !string.IsNullOrWhiteSpace(scene.path))
                 .Select(scene => scene.path)
@@ -65,6 +70,19 @@ namespace Wigglebites.Editor
             Debug.Log($"Android build succeeded: {outputPath} ({report.summary.totalSize} bytes, {report.summary.totalTime}).");
         }
 
+        private static void ValidateReleaseSigning()
+        {
+            if (!PlayerSettings.Android.useCustomKeystore ||
+                string.IsNullOrWhiteSpace(PlayerSettings.Android.keystoreName) ||
+                string.IsNullOrEmpty(PlayerSettings.Android.keystorePass) ||
+                string.IsNullOrWhiteSpace(PlayerSettings.Android.keyaliasName) ||
+                string.IsNullOrEmpty(PlayerSettings.Android.keyaliasPass))
+            {
+                throw new InvalidOperationException(
+                    "Release builds require a custom Android keystore, alias and passwords supplied by the secure build environment.");
+            }
+        }
+
         private static string ResolveProjectOutputPath(string relativePath, string requiredExtension)
         {
             if (Path.IsPathRooted(relativePath)) throw new ArgumentException("Build output must be relative to the project root.", nameof(relativePath));
@@ -73,6 +91,10 @@ namespace Wigglebites.Editor
             if (segments.Length == 0 || segments.Any(segment => segment == ".." || segment == "."))
             {
                 throw new ArgumentException("Build output must not contain relative traversal segments.", nameof(relativePath));
+            }
+            if (!string.Equals(segments[0], "Builds", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Build output must be below the project Builds directory.", nameof(relativePath));
             }
             if (!string.Equals(Path.GetExtension(normalized), requiredExtension, StringComparison.OrdinalIgnoreCase))
             {
@@ -86,7 +108,25 @@ namespace Wigglebites.Editor
             {
                 throw new ArgumentException("Build output escaped the project root.", nameof(relativePath));
             }
+            RejectLinkedOutputAncestors(projectRoot, outputPath);
             return outputPath;
+        }
+
+        private static void RejectLinkedOutputAncestors(string projectRoot, string outputPath)
+        {
+            if (File.Exists(outputPath) && (File.GetAttributes(outputPath) & FileAttributes.ReparsePoint) != 0)
+            {
+                throw new IOException("Build output file must not be a symbolic link or reparse point.");
+            }
+            var current = Path.GetDirectoryName(outputPath);
+            while (!string.IsNullOrEmpty(current) && !string.Equals(current, projectRoot, StringComparison.Ordinal))
+            {
+                if (Directory.Exists(current) && (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                {
+                    throw new IOException("Build output directory must not contain symbolic-link or reparse-point ancestors.");
+                }
+                current = Path.GetDirectoryName(current);
+            }
         }
     }
 }

@@ -8,7 +8,9 @@ Use Unity `6000.0.23f1` with Android Build Support, OpenJDK and the Android SDK/
 UNITY_PATH=/path/to/Unity ./scripts/validate-unity.sh
 ```
 
-The script runs all EditMode tests and then invokes `Wigglebites.Editor.AndroidBuild.BuildRelease`. Outputs are written only below the ignored `Builds/` and `Logs/` folders. Set `WIGGLEBITES_BUILD_AAB=1` for an Android App Bundle or `WIGGLEBITES_BUILD_PATH` for another project-relative `.apk`/`.aab` output. Release signing credentials must stay outside the repository and be configured through Unity or the secure build environment.
+The script verifies the exact Unity version, runs all EditMode tests, validates the generated XML contains passing tests, and then invokes `Wigglebites.Editor.AndroidBuild.BuildValidation` for a local validation APK. Outputs are restricted to the ignored `Builds/` and `Logs/` folders; `WIGGLEBITES_BUILD_PATH` may select another `.apk` path below `Builds/`.
+
+`Wigglebites.Editor.AndroidBuild.BuildRelease` is the separate release entry point. It fails closed unless Unity has a custom keystore, alias and passwords supplied by the secure build environment. Set `WIGGLEBITES_BUILD_AAB=1` for an Android App Bundle and use a `.aab` path below `Builds/`. Signing files and credentials must remain outside the repository and must never be written to build logs.
 
 ## Device acceptance checklist
 

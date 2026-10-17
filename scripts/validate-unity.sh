@@ -15,23 +15,45 @@ if [[ -z "$unity_bin" ]]; then
   fi
 fi
 
+unity_version="$("$unity_bin" -version 2>/dev/null | tr -d '\r' | head -n 1)"
+if [[ "$unity_version" != 6000.0.23f1* ]]; then
+  echo "Expected Unity 6000.0.23f1, found: ${unity_version:-unknown}" >&2
+  exit 2
+fi
+
 mkdir -p "$project_dir/Builds/Validation" "$project_dir/Logs"
-"$unity_bin" -batchmode -nographics -quit \
+test_results="$project_dir/Builds/Validation/editmode-results.xml"
+"$unity_bin" -batchmode -nographics \
   -projectPath "$project_dir" \
   -runTests -testPlatform EditMode \
-  -testResults "$project_dir/Builds/Validation/editmode-results.xml" \
+  -testResults "$test_results" \
   -logFile "$project_dir/Logs/editmode-tests.log"
 
-if [[ "${WIGGLEBITES_BUILD_AAB:-0}" == "1" ]]; then
-  build_path="Builds/Android/Wigglebites.aab"
-else
-  build_path="Builds/Android/Wigglebites.apk"
-fi
+python3 - "$test_results" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+path = pathlib.Path(sys.argv[1])
+if not path.is_file():
+    raise SystemExit("Unity did not produce an EditMode result file")
+root = ET.parse(path).getroot()
+cases = root.findall(".//test-case")
+failed = sum(1 for case in cases if case.get("result", "").lower() in {"failed", "failure"})
+if not cases:
+    raise SystemExit("Unity reported zero EditMode tests")
+root_result = root.get("result", "").lower()
+if failed or root.get("failed", "0") not in {"0", None} or (root_result and root_result != "passed"):
+    raise SystemExit(f"Unity EditMode tests failed: {failed} failing test cases")
+print(f"Unity EditMode tests passed: {len(cases)} test cases")
+PY
+
+build_path="${WIGGLEBITES_BUILD_PATH:-Builds/Android/Wigglebites.apk}"
 
 WIGGLEBITES_BUILD_PATH="$build_path" \
 "$unity_bin" -batchmode -nographics -quit \
   -projectPath "$project_dir" \
-  -executeMethod Wigglebites.Editor.AndroidBuild.BuildRelease \
+  -executeMethod Wigglebites.Editor.AndroidBuild.BuildValidation \
   -logFile "$project_dir/Logs/android-build.log"
 
-echo "Validation complete: EditMode tests and Android APK build succeeded."
+echo "Validation complete: EditMode tests and Android validation APK succeeded at $build_path."
