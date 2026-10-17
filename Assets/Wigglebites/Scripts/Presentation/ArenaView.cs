@@ -41,6 +41,19 @@ namespace Wigglebites.Presentation
                 : Vector3.zero;
         }
 
+        public void ResetSimulationObjects()
+        {
+            if (_dynamicRoot != null)
+            {
+                _dynamicRoot.gameObject.SetActive(false);
+                Destroy(_dynamicRoot.gameObject);
+            }
+            _snakeSegments.Clear();
+            _foodObjects.Clear();
+            _dynamicRoot = new GameObject("DynamicObjects").transform;
+            _dynamicRoot.SetParent(transform, false);
+        }
+
         private void RenderSnakes(IReadOnlyList<SnakeState> snakes)
         {
             for (var snakeIndex = 0; snakeIndex < snakes.Count; snakeIndex++)

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   arenaSize: 100
   simulationRate: 30
+  matchDurationSeconds: 180
   baseSpeed: 5
   boostSpeed: 8
   boostMassCostPerSecond: 2
