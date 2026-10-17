@@ -9,20 +9,27 @@ namespace Wigglebites.Simulation
         private readonly float _sampleSpacing;
         private readonly int _baseBodySegments;
         private SimVector2 _desiredHeading;
+        private bool _boostRequested;
 
         public SnakeState(
             int id,
             bool isPlayer,
             SimVector2 position,
             SimVector2 heading,
-            float speed,
+            float baseSpeed,
+            float boostSpeed,
+            float boostMassCostPerSecond,
+            float minimumBoostMass,
             float turnRateRadians,
             float startingMass,
             float sampleSpacing,
             int baseBodySegments)
         {
             if (heading.SqrMagnitude <= 0f) throw new ArgumentException("Heading must be non-zero.", nameof(heading));
-            if (speed <= 0f) throw new ArgumentOutOfRangeException(nameof(speed));
+            if (baseSpeed <= 0f) throw new ArgumentOutOfRangeException(nameof(baseSpeed));
+            if (boostSpeed < baseSpeed) throw new ArgumentOutOfRangeException(nameof(boostSpeed));
+            if (boostMassCostPerSecond < 0f) throw new ArgumentOutOfRangeException(nameof(boostMassCostPerSecond));
+            if (minimumBoostMass < 0f) throw new ArgumentOutOfRangeException(nameof(minimumBoostMass));
             if (turnRateRadians <= 0f) throw new ArgumentOutOfRangeException(nameof(turnRateRadians));
             if (startingMass <= 0f) throw new ArgumentOutOfRangeException(nameof(startingMass));
             if (sampleSpacing <= 0f) throw new ArgumentOutOfRangeException(nameof(sampleSpacing));
@@ -33,9 +40,13 @@ namespace Wigglebites.Simulation
             Position = position;
             Heading = heading.Normalized;
             _desiredHeading = Heading;
-            Speed = speed;
+            BaseSpeed = baseSpeed;
+            BoostSpeed = boostSpeed;
+            BoostMassCostPerSecond = boostMassCostPerSecond;
+            MinimumBoostMass = minimumBoostMass;
             TurnRateRadians = turnRateRadians;
             Mass = startingMass;
+            IsAlive = true;
             _sampleSpacing = sampleSpacing;
             _baseBodySegments = baseBodySegments;
 
@@ -49,9 +60,15 @@ namespace Wigglebites.Simulation
         public bool IsPlayer { get; }
         public SimVector2 Position { get; private set; }
         public SimVector2 Heading { get; private set; }
-        public float Speed { get; }
+        public float BaseSpeed { get; }
+        public float BoostSpeed { get; }
+        public float BoostMassCostPerSecond { get; }
+        public float MinimumBoostMass { get; }
         public float TurnRateRadians { get; }
         public float Mass { get; private set; }
+        public bool IsAlive { get; private set; }
+        public bool IsBoosting { get; private set; }
+        public float CollisionCooldownRemaining { get; private set; }
         public int BodySegmentCount => _baseBodySegments + Math.Max(0, (int)(Mass / 10f));
 
         public void SetDesiredHeading(SimVector2 heading)
@@ -62,9 +79,17 @@ namespace Wigglebites.Simulation
             }
         }
 
+        public void SetBoostRequested(bool requested)
+        {
+            _boostRequested = requested;
+        }
+
         public void Tick(float deltaTime)
         {
             if (deltaTime <= 0f) throw new ArgumentOutOfRangeException(nameof(deltaTime));
+            if (!IsAlive) return;
+
+            CollisionCooldownRemaining = Math.Max(0f, CollisionCooldownRemaining - deltaTime);
 
             var angle = (float)Math.Atan2(
                 SimVector2.Cross(Heading, _desiredHeading),
@@ -73,7 +98,15 @@ namespace Wigglebites.Simulation
             var appliedTurn = Math.Clamp(angle, -maximumTurn, maximumTurn);
 
             Heading = SimVector2.Rotate(Heading, appliedTurn).Normalized;
-            Position += Heading * (Speed * deltaTime);
+            IsBoosting = _boostRequested && Mass > MinimumBoostMass;
+            if (IsBoosting)
+            {
+                var massCost = Math.Min(BoostMassCostPerSecond * deltaTime, Mass - MinimumBoostMass);
+                Mass -= massCost;
+            }
+
+            var speed = IsBoosting ? BoostSpeed : BaseSpeed;
+            Position += Heading * (speed * deltaTime);
             RecordPathSample();
         }
 
@@ -104,6 +137,25 @@ namespace Wigglebites.Simulation
         {
             if (amount <= 0f) throw new ArgumentOutOfRangeException(nameof(amount));
             Mass += amount;
+        }
+
+        internal void Eliminate()
+        {
+            IsAlive = false;
+            IsBoosting = false;
+            _boostRequested = false;
+        }
+
+        internal void ApplyDeflection(SimVector2 awayFromContact, float cooldownSeconds)
+        {
+            if (!IsAlive || CollisionCooldownRemaining > 0f) return;
+
+            var direction = awayFromContact.SqrMagnitude > 0.00001f
+                ? awayFromContact.Normalized
+                : new SimVector2(-Heading.X, -Heading.Y);
+            Heading = direction;
+            _desiredHeading = direction;
+            CollisionCooldownRemaining = Math.Max(CollisionCooldownRemaining, cooldownSeconds);
         }
 
         internal void ConstrainToArena(float halfExtent)

@@ -50,6 +50,15 @@ namespace Wigglebites.Presentation
                     _snakeSegments.Add(snake.Id, segments);
                 }
 
+                if (!snake.IsAlive)
+                {
+                    for (var segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
+                    {
+                        segments[segmentIndex].gameObject.SetActive(false);
+                    }
+                    continue;
+                }
+
                 while (segments.Count < snake.BodySegmentCount)
                 {
                     var segment = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -63,6 +72,7 @@ namespace Wigglebites.Presentation
 
                 for (var segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
                 {
+                    segments[segmentIndex].gameObject.SetActive(true);
                     var position = snake.GetBodyPosition(segmentIndex);
                     segments[segmentIndex].position = new Vector3(position.X, 0.65f, position.Y);
                 }

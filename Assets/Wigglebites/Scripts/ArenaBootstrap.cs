@@ -67,6 +67,7 @@ namespace Wigglebites
             while (_accumulator >= _balance.SimulationStep)
             {
                 _simulation.SetDesiredHeading(PlayerSnakeId, _input.DesiredHeading);
+                _simulation.SetBoostRequested(PlayerSnakeId, _input.IsBoostHeld);
                 var bot = _simulation.FindSnake(BotSnakeId);
                 _simulation.SetDesiredHeading(BotSnakeId, _botBrain.ChooseHeading(bot, _simulation.Food));
                 _simulation.Tick(_balance.SimulationStep);
