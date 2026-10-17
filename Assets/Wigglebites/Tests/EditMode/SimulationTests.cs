@@ -21,7 +21,8 @@ namespace Wigglebites.Tests
             combatMassRatio: 1.1f,
             eliminationDropFraction: 0.5f,
             eliminationFoodMass: 2f,
-            collisionCooldownSeconds: 0.25f);
+            collisionCooldownSeconds: 0.25f,
+            safeSpawnRadius: 1.1f);
 
         [Test]
         public void Tick_AdvancesSnakeAtConfiguredSpeed()

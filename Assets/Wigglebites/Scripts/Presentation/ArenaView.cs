@@ -114,6 +114,7 @@ namespace Wigglebites.Presentation
                     _foodObjects.Add(item.Id, foodObject);
                 }
 
+                foodObject.SetActive(true);
                 foodObject.transform.position = new Vector3(item.Position.X, 0.45f, item.Position.Y);
             }
         }
