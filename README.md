@@ -16,3 +16,5 @@ See `docs/DEVELOPMENT_PLAN.md` for implementation milestones.
 Choose **SPELA**, then drag on the left side of an Android screen to steer and hold the right side to boost. Arrow keys or WASD steer in the editor; hold Space to boost. The current build contains a 180-second offline match, live top-five standings, pause/results/replay flows, local best-mass and settings persistence, 19 personality-driven bots, safe respawns, 350 spatially indexed food objects, size-based combat and a runtime-generated Neon Arena presentation. Sound and reduced-effects controls are available from the menu and pause screen.
 
 Run EditMode tests from **Window > General > Test Runner**. See `docs/IMPLEMENTATION_STATUS.md` for implemented and remaining MVP scope.
+
+For a command-line EditMode + Android build gate and the required device acceptance record, see `docs/ANDROID_RELEASE.md`.
