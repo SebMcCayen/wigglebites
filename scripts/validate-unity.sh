@@ -15,14 +15,17 @@ if [[ -z "$unity_bin" ]]; then
   fi
 fi
 
-unity_version="$("$unity_bin" -version 2>/dev/null | tr -d '\r' | head -n 1)"
-if [[ "$unity_version" != 6000.0.23f1* ]]; then
+unity_version_output="$("$unity_bin" -version 2>/dev/null | tr -d '\r')"
+unity_version_line="${unity_version_output%%$'\n'*}"
+unity_version="${unity_version_line%%[[:space:]]*}"
+if [[ "$unity_version" != "6000.0.23f1" ]]; then
   echo "Expected Unity 6000.0.23f1, found: ${unity_version:-unknown}" >&2
   exit 2
 fi
 
 mkdir -p "$project_dir/Builds/Validation" "$project_dir/Logs"
 test_results="$project_dir/Builds/Validation/editmode-results.xml"
+rm -f "$test_results"
 "$unity_bin" -batchmode -nographics \
   -projectPath "$project_dir" \
   -runTests -testPlatform EditMode \
@@ -39,13 +42,16 @@ if not path.is_file():
     raise SystemExit("Unity did not produce an EditMode result file")
 root = ET.parse(path).getroot()
 cases = root.findall(".//test-case")
-failed = sum(1 for case in cases if case.get("result", "").lower() in {"failed", "failure"})
 if not cases:
     raise SystemExit("Unity reported zero EditMode tests")
+passed = sum(1 for case in cases if case.get("result", "").lower() == "passed")
+non_passing = len(cases) - passed
 root_result = root.get("result", "").lower()
-if failed or root.get("failed", "0") not in {"0", None} or (root_result and root_result != "passed"):
-    raise SystemExit(f"Unity EditMode tests failed: {failed} failing test cases")
-print(f"Unity EditMode tests passed: {len(cases)} test cases")
+if passed == 0 or non_passing or root.get("failed", "0") not in {"0", None} or root_result != "passed":
+    raise SystemExit(
+        f"Unity EditMode tests did not fully pass: {passed} passed, {non_passing} failed/skipped/inconclusive"
+    )
+print(f"Unity EditMode tests passed: {passed} test cases")
 PY
 
 build_path="${WIGGLEBITES_BUILD_PATH:-Builds/Android/Wigglebites.apk}"

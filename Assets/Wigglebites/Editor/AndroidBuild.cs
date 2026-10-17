@@ -19,10 +19,22 @@ namespace Wigglebites.Editor
         public static void BuildValidation() => Build(development: false, appBundle: false, requireReleaseSigning: false);
 
         [MenuItem("Wigglebites/Build Android/Release")]
-        public static void BuildRelease() => Build(
-            development: false,
-            appBundle: string.Equals(Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_AAB"), "1", StringComparison.Ordinal),
-            requireReleaseSigning: true);
+        public static void BuildRelease()
+        {
+            var signing = new SigningSettings();
+            try
+            {
+                ApplyReleaseSigningEnvironment();
+                Build(
+                    development: false,
+                    appBundle: string.Equals(Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_AAB"), "1", StringComparison.Ordinal),
+                    requireReleaseSigning: true);
+            }
+            finally
+            {
+                signing.Restore();
+            }
+        }
 
         private static void Build(bool development, bool appBundle, bool requireReleaseSigning)
         {
@@ -83,6 +95,25 @@ namespace Wigglebites.Editor
             }
         }
 
+        private static void ApplyReleaseSigningEnvironment()
+        {
+            var keystorePath = Environment.GetEnvironmentVariable("WIGGLEBITES_KEYSTORE_PATH");
+            var keystorePassword = Environment.GetEnvironmentVariable("WIGGLEBITES_KEYSTORE_PASSWORD");
+            var alias = Environment.GetEnvironmentVariable("WIGGLEBITES_KEY_ALIAS");
+            var aliasPassword = Environment.GetEnvironmentVariable("WIGGLEBITES_KEY_PASSWORD");
+            if (new[] { keystorePath, keystorePassword, alias, aliasPassword }.All(string.IsNullOrEmpty)) return;
+            if (new[] { keystorePath, keystorePassword, alias, aliasPassword }.Any(string.IsNullOrWhiteSpace))
+            {
+                throw new InvalidOperationException("All Android signing environment variables must be supplied together.");
+            }
+
+            PlayerSettings.Android.useCustomKeystore = true;
+            PlayerSettings.Android.keystoreName = keystorePath;
+            PlayerSettings.Android.keystorePass = keystorePassword;
+            PlayerSettings.Android.keyaliasName = alias;
+            PlayerSettings.Android.keyaliasPass = aliasPassword;
+        }
+
         private static string ResolveProjectOutputPath(string relativePath, string requiredExtension)
         {
             if (Path.IsPathRooted(relativePath)) throw new ArgumentException("Build output must be relative to the project root.", nameof(relativePath));
@@ -114,9 +145,20 @@ namespace Wigglebites.Editor
 
         private static void RejectLinkedOutputAncestors(string projectRoot, string outputPath)
         {
-            if (File.Exists(outputPath) && (File.GetAttributes(outputPath) & FileAttributes.ReparsePoint) != 0)
+            var outputDirectory = Path.GetDirectoryName(outputPath);
+            var matchingEntries = !string.IsNullOrEmpty(outputDirectory) && Directory.Exists(outputDirectory)
+                ? Directory.EnumerateFileSystemEntries(outputDirectory)
+                    .Where(entry => string.Equals(Path.GetFullPath(entry), outputPath, StringComparison.Ordinal))
+                    .ToArray()
+                : Array.Empty<string>();
+            if (matchingEntries.Length != 0)
             {
-                throw new IOException("Build output file must not be a symbolic link or reparse point.");
+                if (!File.Exists(outputPath) || Directory.Exists(outputPath) ||
+                    (File.GetAttributes(outputPath) & FileAttributes.ReparsePoint) != 0)
+                {
+                    throw new IOException("Build output must not be a directory, symbolic link or reparse point.");
+                }
+                File.Delete(outputPath);
             }
             var current = Path.GetDirectoryName(outputPath);
             while (!string.IsNullOrEmpty(current) && !string.Equals(current, projectRoot, StringComparison.Ordinal))
@@ -126,6 +168,24 @@ namespace Wigglebites.Editor
                     throw new IOException("Build output directory must not contain symbolic-link or reparse-point ancestors.");
                 }
                 current = Path.GetDirectoryName(current);
+            }
+        }
+
+        private sealed class SigningSettings
+        {
+            private readonly bool useCustomKeystore = PlayerSettings.Android.useCustomKeystore;
+            private readonly string keystoreName = PlayerSettings.Android.keystoreName;
+            private readonly string keystorePass = PlayerSettings.Android.keystorePass;
+            private readonly string keyaliasName = PlayerSettings.Android.keyaliasName;
+            private readonly string keyaliasPass = PlayerSettings.Android.keyaliasPass;
+
+            public void Restore()
+            {
+                PlayerSettings.Android.useCustomKeystore = useCustomKeystore;
+                PlayerSettings.Android.keystoreName = keystoreName;
+                PlayerSettings.Android.keystorePass = keystorePass;
+                PlayerSettings.Android.keyaliasName = keyaliasName;
+                PlayerSettings.Android.keyaliasPass = keyaliasPass;
             }
         }
     }

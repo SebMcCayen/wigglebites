@@ -2,7 +2,7 @@
 
 ## Automated local gate
 
-Use Unity `6000.0.23f1` with Android Build Support, OpenJDK and the Android SDK/NDK modules installed.
+Use Unity `6000.0.23f1` with Android Build Support, OpenJDK, the Android SDK/NDK modules and `python3` installed.
 
 ```bash
 UNITY_PATH=/path/to/Unity ./scripts/validate-unity.sh
@@ -10,7 +10,7 @@ UNITY_PATH=/path/to/Unity ./scripts/validate-unity.sh
 
 The script verifies the exact Unity version, runs all EditMode tests, validates the generated XML contains passing tests, and then invokes `Wigglebites.Editor.AndroidBuild.BuildValidation` for a local validation APK. Outputs are restricted to the ignored `Builds/` and `Logs/` folders; `WIGGLEBITES_BUILD_PATH` may select another `.apk` path below `Builds/`.
 
-`Wigglebites.Editor.AndroidBuild.BuildRelease` is the separate release entry point. It fails closed unless Unity has a custom keystore, alias and passwords supplied by the secure build environment. Set `WIGGLEBITES_BUILD_AAB=1` for an Android App Bundle and use a `.aab` path below `Builds/`. Signing files and credentials must remain outside the repository and must never be written to build logs.
+`Wigglebites.Editor.AndroidBuild.BuildRelease` is the separate release entry point. It fails closed unless Unity has a custom keystore, alias and passwords. A clean batch job can inject them with `WIGGLEBITES_KEYSTORE_PATH`, `WIGGLEBITES_KEYSTORE_PASSWORD`, `WIGGLEBITES_KEY_ALIAS` and `WIGGLEBITES_KEY_PASSWORD`; all four must be present together. The values are restored after the build and are never logged. Set `WIGGLEBITES_BUILD_AAB=1` for an Android App Bundle and use a `.aab` path below `Builds/`. Signing files and credentials must remain outside the repository and must never be written to build logs.
 
 ## Device acceptance checklist
 
