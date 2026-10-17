@@ -23,7 +23,8 @@ namespace Wigglebites.Config
         [SerializeField, Min(2)] private int baseBodySegments = 8;
 
         [Header("Food")]
-        [SerializeField, Range(1, 500)] private int initialFoodCount = 80;
+        [SerializeField, Range(1, 500)] private int initialFoodCount = 350;
+        [SerializeField, Range(1, 1000)] private int maximumFoodCount = 500;
         [SerializeField, Min(0.05f)] private float foodPickupRadius = 0.35f;
         [SerializeField, Min(0.1f)] private float minimumFoodMass = 1f;
         [SerializeField, Min(0.1f)] private float maximumFoodMass = 3f;
@@ -34,11 +35,22 @@ namespace Wigglebites.Config
         [SerializeField, Min(0.1f)] private float eliminationFoodMass = 2f;
         [SerializeField, Min(0f)] private float collisionCooldownSeconds = 0.25f;
 
+        [Header("Bots and spawning")]
+        [SerializeField, Range(1, 19)] private int botCount = 19;
+        [SerializeField, Min(1f)] private float botPerceptionRadius = 24f;
+        [SerializeField, Min(1f)] private float safeSpawnRadius = 6f;
+        [SerializeField, Min(0f)] private float spawnGraceSeconds = 2f;
+        [SerializeField, Min(0f)] private float botRespawnDelaySeconds = 3f;
+
         public float ArenaSize => arenaSize;
         public float SimulationStep => 1f / simulationRate;
         public int InitialFoodCount => initialFoodCount;
         public float MinimumFoodMass => minimumFoodMass;
         public float MaximumFoodMass => maximumFoodMass;
+        public int BotCount => botCount;
+        public float BotPerceptionRadius => botPerceptionRadius;
+        public float SpawnGraceSeconds => spawnGraceSeconds;
+        public float BotRespawnDelaySeconds => botRespawnDelaySeconds;
 
         public SimulationConfig CreateSimulationConfig() => new SimulationConfig(
             arenaSize,
@@ -56,13 +68,21 @@ namespace Wigglebites.Config
             combatMassRatio,
             eliminationDropFraction,
             eliminationFoodMass,
-            collisionCooldownSeconds);
+            collisionCooldownSeconds,
+            safeSpawnRadius,
+            spawnGraceSeconds,
+            botRespawnDelaySeconds,
+            maximumFoodCount);
 
         private void OnValidate()
         {
             boostSpeed = Mathf.Max(baseSpeed, boostSpeed);
             minimumBoostMass = Mathf.Min(startingMass, minimumBoostMass);
             maximumFoodMass = Mathf.Max(minimumFoodMass, maximumFoodMass);
+            maximumFoodCount = Mathf.Max(initialFoodCount, maximumFoodCount);
+            safeSpawnRadius = Mathf.Max(
+                headRadius * 2f,
+                Mathf.Min(safeSpawnRadius, (arenaSize * 0.5f) - headRadius));
         }
     }
 }

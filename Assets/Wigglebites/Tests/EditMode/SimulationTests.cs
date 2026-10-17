@@ -21,7 +21,8 @@ namespace Wigglebites.Tests
             combatMassRatio: 1.1f,
             eliminationDropFraction: 0.5f,
             eliminationFoodMass: 2f,
-            collisionCooldownSeconds: 0.25f);
+            collisionCooldownSeconds: 0.25f,
+            safeSpawnRadius: 1.1f);
 
         [Test]
         public void Tick_AdvancesSnakeAtConfiguredSpeed()
@@ -139,6 +140,42 @@ namespace Wigglebites.Tests
             Assert.That(first.IsAlive, Is.True);
             Assert.That(second.IsAlive, Is.True);
             Assert.That(third.IsAlive, Is.False, "The first snake must still resolve its later qualifying contact.");
+        }
+
+        [Test]
+        public void EliminationDrops_ReuseConsumedFoodWithinConfiguredPoolLimit()
+        {
+            var config = new SimulationConfig(
+                arenaSize: 100f,
+                baseSpeed: 5f,
+                boostSpeed: 8f,
+                boostMassCostPerSecond: 2f,
+                minimumBoostMass: 10f,
+                turnRateDegrees: 90f,
+                startingMass: 10f,
+                headRadius: 0.5f,
+                bodyRadius: 0.45f,
+                foodPickupRadius: 0.5f,
+                bodySampleSpacing: 0.7f,
+                baseBodySegments: 8,
+                combatMassRatio: 1.1f,
+                eliminationDropFraction: 0.5f,
+                eliminationFoodMass: 2f,
+                collisionCooldownSeconds: 0.25f,
+                maximumFoodCount: 1);
+            var simulation = new GameSimulation(config);
+            simulation.AddSnake(1, true, SimVector2.Zero, SimVector2.Right);
+            var pooledFood = simulation.AddFood(1, SimVector2.Zero, 1f);
+            simulation.Tick(0.01f);
+            Assert.That(pooledFood.IsActive, Is.False);
+            simulation.AddSnake(2, false, new SimVector2(20f, 0f), SimVector2.Right, startingMass: 11f);
+            simulation.AddSnake(3, false, new SimVector2(20f, 0f), SimVector2.Right, startingMass: 10f);
+
+            simulation.Tick(0.01f);
+
+            Assert.That(simulation.Food.Count, Is.EqualTo(1));
+            Assert.That(pooledFood.IsActive, Is.True);
+            Assert.That(pooledFood.MassValue, Is.EqualTo(2f));
         }
     }
 }

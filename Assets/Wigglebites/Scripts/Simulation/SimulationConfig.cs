@@ -20,7 +20,11 @@ namespace Wigglebites.Simulation
             float combatMassRatio,
             float eliminationDropFraction,
             float eliminationFoodMass,
-            float collisionCooldownSeconds)
+            float collisionCooldownSeconds,
+            float safeSpawnRadius = 6f,
+            float spawnGraceSeconds = 2f,
+            float botRespawnDelaySeconds = 3f,
+            int maximumFoodCount = 500)
         {
             if (arenaSize <= 0f) throw new ArgumentOutOfRangeException(nameof(arenaSize));
             if (baseSpeed <= 0f) throw new ArgumentOutOfRangeException(nameof(baseSpeed));
@@ -39,6 +43,11 @@ namespace Wigglebites.Simulation
             if (eliminationDropFraction < 0f || eliminationDropFraction > 1f) throw new ArgumentOutOfRangeException(nameof(eliminationDropFraction));
             if (eliminationFoodMass <= 0f) throw new ArgumentOutOfRangeException(nameof(eliminationFoodMass));
             if (collisionCooldownSeconds < 0f) throw new ArgumentOutOfRangeException(nameof(collisionCooldownSeconds));
+            if (safeSpawnRadius < headRadius * 2f) throw new ArgumentOutOfRangeException(nameof(safeSpawnRadius));
+            if (safeSpawnRadius >= arenaSize * 0.5f) throw new ArgumentOutOfRangeException(nameof(safeSpawnRadius));
+            if (spawnGraceSeconds < 0f) throw new ArgumentOutOfRangeException(nameof(spawnGraceSeconds));
+            if (botRespawnDelaySeconds < 0f) throw new ArgumentOutOfRangeException(nameof(botRespawnDelaySeconds));
+            if (maximumFoodCount <= 0) throw new ArgumentOutOfRangeException(nameof(maximumFoodCount));
 
             ArenaSize = arenaSize;
             BaseSpeed = baseSpeed;
@@ -56,6 +65,10 @@ namespace Wigglebites.Simulation
             EliminationDropFraction = eliminationDropFraction;
             EliminationFoodMass = eliminationFoodMass;
             CollisionCooldownSeconds = collisionCooldownSeconds;
+            SafeSpawnRadius = safeSpawnRadius;
+            SpawnGraceSeconds = spawnGraceSeconds;
+            BotRespawnDelaySeconds = botRespawnDelaySeconds;
+            MaximumFoodCount = maximumFoodCount;
         }
 
         public float ArenaSize { get; }
@@ -74,5 +87,9 @@ namespace Wigglebites.Simulation
         public float EliminationDropFraction { get; }
         public float EliminationFoodMass { get; }
         public float CollisionCooldownSeconds { get; }
+        public float SafeSpawnRadius { get; }
+        public float SpawnGraceSeconds { get; }
+        public float BotRespawnDelaySeconds { get; }
+        public int MaximumFoodCount { get; }
     }
 }

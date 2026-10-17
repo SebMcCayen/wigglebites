@@ -11,12 +11,11 @@ namespace Wigglebites
     public sealed class ArenaBootstrap : MonoBehaviour
     {
         private const int PlayerSnakeId = 1;
-        private const int BotSnakeId = 2;
         private const int RandomSeed = 1337;
 
-        private readonly CollectorBotBrain _botBrain = new CollectorBotBrain();
         private GameBalanceConfig _balance;
         private GameSimulation _simulation;
+        private BotRosterController _botRoster;
         private TouchSteeringInput _input;
         private ArenaView _view;
         private FollowCamera _followCamera;
@@ -68,8 +67,7 @@ namespace Wigglebites
             {
                 _simulation.SetDesiredHeading(PlayerSnakeId, _input.DesiredHeading);
                 _simulation.SetBoostRequested(PlayerSnakeId, _input.IsBoostHeld);
-                var bot = _simulation.FindSnake(BotSnakeId);
-                _simulation.SetDesiredHeading(BotSnakeId, _botBrain.ChooseHeading(bot, _simulation.Food));
+                _botRoster.Tick(_balance.SimulationStep);
                 _simulation.Tick(_balance.SimulationStep);
                 _accumulator -= _balance.SimulationStep;
             }
@@ -81,8 +79,13 @@ namespace Wigglebites
         private void BuildSimulation()
         {
             _simulation = new GameSimulation(_balance.CreateSimulationConfig());
-            _simulation.AddSnake(PlayerSnakeId, true, new SimVector2(-4f, 0f), SimVector2.Right);
-            _simulation.AddSnake(BotSnakeId, false, new SimVector2(4f, 0f), new SimVector2(-1f, 0f));
+            _simulation.AddSnake(PlayerSnakeId, true, SimVector2.Zero, SimVector2.Right);
+            _botRoster = new BotRosterController(
+                _simulation,
+                RandomSeed,
+                _balance.BotPerceptionRadius,
+                _balance.BotRespawnDelaySeconds);
+            _botRoster.SpawnInitialRoster(_balance.BotCount);
 
             var random = new System.Random(RandomSeed);
             var spawnExtent = (_balance.ArenaSize * 0.5f) - 2f;
