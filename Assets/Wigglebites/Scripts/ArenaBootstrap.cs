@@ -1,10 +1,14 @@
 using System;
+using System.IO;
 using UnityEngine;
 using Wigglebites.AI;
+using Wigglebites.Application;
 using Wigglebites.Config;
 using Wigglebites.Input;
+using Wigglebites.Persistence;
 using Wigglebites.Presentation;
 using Wigglebites.Simulation;
+using Wigglebites.UI;
 
 namespace Wigglebites
 {
@@ -19,7 +23,15 @@ namespace Wigglebites
         private TouchSteeringInput _input;
         private ArenaView _view;
         private FollowCamera _followCamera;
+        private MatchController _match;
+        private LocalSaveStore _saveStore;
+        private LocalSaveData _saveData;
         private float _accumulator;
+        private bool _resultPersisted;
+
+        public MatchController Match => _match;
+        public SnakeState Player => _simulation?.FindSnake(PlayerSnakeId);
+        public float BestMass => _saveData?.bestMass ?? 0f;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateRuntime()
@@ -30,7 +42,7 @@ namespace Wigglebites
 
         private void Awake()
         {
-            Application.targetFrameRate = 60;
+            UnityEngine.Application.targetFrameRate = 60;
             Screen.orientation = ScreenOrientation.Portrait;
             QualitySettings.vSyncCount = 0;
 
@@ -53,14 +65,26 @@ namespace Wigglebites
             _followCamera = cameraObject.AddComponent<FollowCamera>();
             _followCamera.ConfigureCamera();
 
+            _saveStore = new LocalSaveStore(Path.Combine(UnityEngine.Application.persistentDataPath, "wigglebites-save.json"));
+            _saveData = _saveStore.Load();
             BuildSimulation();
+            _match = new MatchController(_simulation, PlayerSnakeId, _balance.MatchDurationSeconds);
             _view.Render(_simulation);
             _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
+
+            var hud = gameObject.AddComponent<RuntimeHud>();
+            hud.Configure(this);
         }
 
         private void Update()
         {
             _input.Sample();
+            if (_match.Phase != MatchPhase.Playing)
+            {
+                _accumulator = 0f;
+                _view.Render(_simulation);
+                return;
+            }
             _accumulator = Mathf.Min(_accumulator + Time.deltaTime, _balance.SimulationStep * 4f);
 
             while (_accumulator >= _balance.SimulationStep)
@@ -69,11 +93,66 @@ namespace Wigglebites
                 _simulation.SetBoostRequested(PlayerSnakeId, _input.IsBoostHeld);
                 _botRoster.Tick(_balance.SimulationStep);
                 _simulation.Tick(_balance.SimulationStep);
+                _match.Advance(_balance.SimulationStep);
                 _accumulator -= _balance.SimulationStep;
+                if (_match.Phase == MatchPhase.Results)
+                {
+                    PersistResult();
+                    break;
+                }
             }
 
             _view.Render(_simulation);
             _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
+        }
+
+        public void StartMatch()
+        {
+            if (_match.Phase == MatchPhase.Menu) _match.Start();
+        }
+
+        public void TogglePause()
+        {
+            if (_match.Phase == MatchPhase.Playing)
+            {
+                _match.Pause();
+                _accumulator = 0f;
+            }
+            else if (_match.Phase == MatchPhase.Paused)
+            {
+                _match.Resume();
+            }
+        }
+
+        public void Replay()
+        {
+            _accumulator = 0f;
+            _resultPersisted = false;
+            _view.ResetSimulationObjects();
+            BuildSimulation();
+            _match = new MatchController(_simulation, PlayerSnakeId, _balance.MatchDurationSeconds);
+            _match.Start();
+            _view.Render(_simulation);
+            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
+        }
+
+        private void PersistResult()
+        {
+            if (_resultPersisted) return;
+            _resultPersisted = true;
+            if (_match.FinalPlayerMass <= _saveData.bestMass) return;
+            _saveData.bestMass = _match.FinalPlayerMass;
+            try
+            {
+                _saveStore.Save(_saveData);
+            }
+            catch (Exception exception) when (
+                exception is IOException ||
+                exception is UnauthorizedAccessException ||
+                exception is ArgumentException)
+            {
+                Debug.LogWarning($"Could not save local best mass: {exception.Message}");
+            }
         }
 
         private void BuildSimulation()

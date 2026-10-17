@@ -10,6 +10,7 @@ namespace Wigglebites.Simulation
         private readonly List<FoodState> _food = new List<FoodState>();
         private readonly List<CombatContact> _combatContacts = new List<CombatContact>();
         private readonly HashSet<int> _pendingEliminations = new HashSet<int>();
+        private readonly Dictionary<int, int> _eliminators = new Dictionary<int, int>();
         private int _nextFoodId = 1;
 
         public GameSimulation(SimulationConfig config)
@@ -192,6 +193,7 @@ namespace Wigglebites.Simulation
         {
             _combatContacts.Clear();
             _pendingEliminations.Clear();
+            _eliminators.Clear();
 
             for (var leftIndex = 0; leftIndex < _snakes.Count; leftIndex++)
             {
@@ -232,6 +234,11 @@ namespace Wigglebites.Simulation
                 if (contact.AttackerQualifies)
                 {
                     _pendingEliminations.Add(contact.Defender.Id);
+                    if (!_eliminators.TryGetValue(contact.Defender.Id, out var currentAttackerId) ||
+                        contact.Attacker.Id < currentAttackerId)
+                    {
+                        _eliminators[contact.Defender.Id] = contact.Attacker.Id;
+                    }
                 }
             }
 
@@ -249,6 +256,10 @@ namespace Wigglebites.Simulation
                 var snake = _snakes[index];
                 if (!_pendingEliminations.Contains(snake.Id)) continue;
 
+                if (_eliminators.TryGetValue(snake.Id, out var attackerId))
+                {
+                    FindSnake(attackerId)?.RecordElimination();
+                }
                 snake.Eliminate();
                 SpawnEliminationFood(snake);
             }

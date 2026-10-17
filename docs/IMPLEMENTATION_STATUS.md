@@ -10,12 +10,13 @@
 - Deterministic 1.10x mass combat, friendly elimination and configurable food drops.
 - Safe bot spawns, delayed respawns, visible non-combat grace periods and staggered 5–10 Hz AI decisions.
 - Bounded 500-item food-state/visual pool with inactive-item reuse for elimination drops.
+- 180-second match timer, deterministic ranking, player-death results, pause/resume and replay.
+- Versioned local JSON persistence for best mass plus a functional runtime HUD/menu/results flow.
 - Runtime-generated placeholder arena and snake visuals.
 - EditMode tests for movement, steering, arena bounds, food collection, bot targeting and spawn lifecycle.
 
 ## Still required for MVP
 
-- Match timer, leaderboard, pause/results/replay flows and local persistence.
 - Approved Neon Arena art direction, UI, VFX, audio and reduced-effects support.
 - Android build, device profiling and release-candidate validation.
 

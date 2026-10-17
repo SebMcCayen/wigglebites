@@ -9,6 +9,7 @@ namespace Wigglebites.Config
         [Header("Simulation")]
         [SerializeField, Min(1f)] private float arenaSize = 100f;
         [SerializeField, Min(1f)] private float simulationRate = 30f;
+        [SerializeField, Min(10f)] private float matchDurationSeconds = 180f;
         [SerializeField, Min(0.1f)] private float baseSpeed = 5f;
         [SerializeField, Min(0.1f)] private float boostSpeed = 8f;
         [SerializeField, Min(0f)] private float boostMassCostPerSecond = 2f;
@@ -45,6 +46,7 @@ namespace Wigglebites.Config
         public float ArenaSize => arenaSize;
         public float SimulationStep => 1f / simulationRate;
         public int InitialFoodCount => initialFoodCount;
+        public float MatchDurationSeconds => matchDurationSeconds;
         public float MinimumFoodMass => minimumFoodMass;
         public float MaximumFoodMass => maximumFoodMass;
         public int BotCount => botCount;

@@ -13,6 +13,6 @@ See `docs/DEVELOPMENT_PLAN.md` for implementation milestones.
 3. Allow Package Manager and asset imports to finish.
 4. Open `Assets/Wigglebites/Scenes/Arena.unity` and enter Play mode.
 
-Drag on the left side of an Android screen to steer and hold the right side to boost. Arrow keys or WASD steer in the editor; hold Space to boost. The current build contains a steerable player snake, 19 personality-driven bots, safe bot respawns, 350 food objects, mass growth and size-based combat using runtime-generated placeholder visuals.
+Choose Play, then drag on the left side of an Android screen to steer and hold the right side to boost. Arrow keys or WASD steer in the editor; hold Space to boost. The current build contains a 180-second offline match, live top-five standings, pause/results/replay flows, local best-mass persistence, 19 personality-driven bots, safe respawns, 350 food objects and size-based combat using runtime-generated placeholder visuals.
 
 Run EditMode tests from **Window > General > Test Runner**. See `docs/IMPLEMENTATION_STATUS.md` for implemented and remaining MVP scope.

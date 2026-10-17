@@ -71,6 +71,7 @@ namespace Wigglebites.Simulation
         public float CollisionCooldownRemaining { get; private set; }
         public float SpawnGraceRemaining { get; private set; }
         public bool IsCombatProtected => SpawnGraceRemaining > 0f;
+        public int Eliminations { get; private set; }
         public int BodySegmentCount => _baseBodySegments + Math.Max(0, (int)(Mass / 10f));
 
         public void SetDesiredHeading(SimVector2 heading)
@@ -147,6 +148,11 @@ namespace Wigglebites.Simulation
             IsAlive = false;
             IsBoosting = false;
             _boostRequested = false;
+        }
+
+        internal void RecordElimination()
+        {
+            Eliminations++;
         }
 
         internal void Respawn(SimVector2 position, SimVector2 heading, float startingMass, float graceSeconds)
