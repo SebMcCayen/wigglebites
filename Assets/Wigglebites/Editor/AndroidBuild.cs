@@ -145,6 +145,16 @@ namespace Wigglebites.Editor
 
         private static void RejectLinkedOutputAncestors(string projectRoot, string outputPath)
         {
+            var current = Path.GetDirectoryName(outputPath);
+            while (!string.IsNullOrEmpty(current) && !string.Equals(current, projectRoot, StringComparison.Ordinal))
+            {
+                if (Directory.Exists(current) && (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+                {
+                    throw new IOException("Build output directory must not contain symbolic-link or reparse-point ancestors.");
+                }
+                current = Path.GetDirectoryName(current);
+            }
+
             var outputDirectory = Path.GetDirectoryName(outputPath);
             var matchingEntries = !string.IsNullOrEmpty(outputDirectory) && Directory.Exists(outputDirectory)
                 ? Directory.EnumerateFileSystemEntries(outputDirectory)
@@ -159,15 +169,6 @@ namespace Wigglebites.Editor
                     throw new IOException("Build output must not be a directory, symbolic link or reparse point.");
                 }
                 File.Delete(outputPath);
-            }
-            var current = Path.GetDirectoryName(outputPath);
-            while (!string.IsNullOrEmpty(current) && !string.Equals(current, projectRoot, StringComparison.Ordinal))
-            {
-                if (Directory.Exists(current) && (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                {
-                    throw new IOException("Build output directory must not contain symbolic-link or reparse-point ancestors.");
-                }
-                current = Path.GetDirectoryName(current);
             }
         }
 
