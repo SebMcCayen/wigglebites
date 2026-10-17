@@ -54,6 +54,7 @@ namespace Wigglebites.Simulation
             {
                 if (_food[index].Id == id) throw new ArgumentException($"Food id {id} already exists.", nameof(id));
             }
+            if (_food.Count >= _config.MaximumFoodCount) throw new InvalidOperationException("The food pool is full.");
 
             var food = new FoodState(id, position, massValue);
             _food.Add(food);
@@ -90,12 +91,17 @@ namespace Wigglebites.Simulation
             var snake = FindSnake(snakeId);
             if (snake == null) throw new ArgumentException($"Unknown snake id {snakeId}.", nameof(snakeId));
             if (snake.IsAlive) throw new InvalidOperationException($"Snake {snakeId} is already alive.");
-            if (!IsSpawnSafe(position, _config.StartingMass)) throw new InvalidOperationException("Respawn position is not safe.");
+            if (!IsSpawnSafe(position, heading, _config.StartingMass)) throw new InvalidOperationException("Respawn position is not safe.");
 
             snake.Respawn(position, heading, _config.StartingMass, _config.SpawnGraceSeconds);
         }
 
-        public bool TryFindSafeSpawn(Random random, float candidateMass, out SimVector2 position, int maximumAttempts = 128)
+        public bool TryFindSafeSpawn(
+            Random random,
+            float candidateMass,
+            out SimVector2 position,
+            out SimVector2 heading,
+            int maximumAttempts = 128)
         {
             if (random == null) throw new ArgumentNullException(nameof(random));
             if (candidateMass <= 0f) throw new ArgumentOutOfRangeException(nameof(candidateMass));
@@ -107,31 +113,44 @@ namespace Wigglebites.Simulation
                 var candidate = new SimVector2(
                     Lerp(-extent, extent, (float)random.NextDouble()),
                     Lerp(-extent, extent, (float)random.NextDouble()));
-                if (!IsSpawnSafe(candidate, candidateMass)) continue;
+                var angle = (float)(random.NextDouble() * Math.PI * 2d);
+                var candidateHeading = new SimVector2((float)Math.Cos(angle), (float)Math.Sin(angle));
+                if (!IsSpawnSafe(candidate, candidateHeading, candidateMass)) continue;
 
                 position = candidate;
+                heading = candidateHeading;
                 return true;
             }
 
             position = SimVector2.Zero;
+            heading = SimVector2.Right;
             return false;
         }
 
-        public bool IsSpawnSafe(SimVector2 position, float candidateMass)
+        public bool IsSpawnSafe(SimVector2 position, SimVector2 heading, float candidateMass)
         {
-            var extent = (_config.ArenaSize * 0.5f) - _config.SafeSpawnRadius;
-            if (Math.Abs(position.X) > extent || Math.Abs(position.Y) > extent) return false;
+            if (heading.SqrMagnitude <= 0f) throw new ArgumentException("Heading must be non-zero.", nameof(heading));
+            if (candidateMass <= 0f) throw new ArgumentOutOfRangeException(nameof(candidateMass));
 
-            for (var snakeIndex = 0; snakeIndex < _snakes.Count; snakeIndex++)
+            var normalizedHeading = heading.Normalized;
+            var extent = (_config.ArenaSize * 0.5f) - _config.HeadRadius;
+            var candidateSegmentCount = _config.BaseBodySegments + Math.Max(0, (int)(candidateMass / 10f));
+            for (var candidateIndex = 0; candidateIndex < candidateSegmentCount; candidateIndex++)
             {
-                var snake = _snakes[snakeIndex];
-                if (!snake.IsAlive || snake.Mass < candidateMass) continue;
+                var candidateSegment = position - (normalizedHeading * (_config.BodySampleSpacing * candidateIndex));
+                if (Math.Abs(candidateSegment.X) > extent || Math.Abs(candidateSegment.Y) > extent) return false;
 
-                for (var segmentIndex = 0; segmentIndex < snake.BodySegmentCount; segmentIndex++)
+                for (var snakeIndex = 0; snakeIndex < _snakes.Count; snakeIndex++)
                 {
-                    if (SimVector2.Distance(position, snake.GetBodyPosition(segmentIndex)) < _config.SafeSpawnRadius)
+                    var snake = _snakes[snakeIndex];
+                    if (!snake.IsAlive || snake.Mass < candidateMass) continue;
+
+                    for (var segmentIndex = 0; segmentIndex < snake.BodySegmentCount; segmentIndex++)
                     {
-                        return false;
+                        if (SimVector2.Distance(candidateSegment, snake.GetBodyPosition(segmentIndex)) < _config.SafeSpawnRadius)
+                        {
+                            return false;
+                        }
                     }
                 }
             }
@@ -157,11 +176,12 @@ namespace Wigglebites.Simulation
         private void ConsumeNearbyFood(SnakeState snake)
         {
             var pickupDistance = _config.HeadRadius + _config.FoodPickupRadius;
+            var pickupDistanceSquared = pickupDistance * pickupDistance;
             for (var foodIndex = 0; foodIndex < _food.Count; foodIndex++)
             {
                 var item = _food[foodIndex];
                 if (!item.IsActive) continue;
-                if (SimVector2.Distance(snake.Position, item.Position) > pickupDistance) continue;
+                if ((snake.Position - item.Position).SqrMagnitude > pickupDistanceSquared) continue;
 
                 item.Consume();
                 snake.AddMass(item.MassValue);
@@ -270,10 +290,24 @@ namespace Wigglebites.Simulation
                 var radius = 0.8f + (0.12f * (float)Math.Sqrt(index));
                 var x = Math.Clamp(snake.Position.X + ((float)Math.Cos(angle) * radius), -halfExtent, halfExtent);
                 var y = Math.Clamp(snake.Position.Y + ((float)Math.Sin(angle) * radius), -halfExtent, halfExtent);
-                AddFood(_nextFoodId, new SimVector2(x, y), foodMass);
+                if (!TrySpawnFood(new SimVector2(x, y), foodMass)) break;
                 remainingMass -= foodMass;
                 index++;
             }
+        }
+
+        private bool TrySpawnFood(SimVector2 position, float massValue)
+        {
+            for (var index = 0; index < _food.Count; index++)
+            {
+                if (_food[index].IsActive) continue;
+                _food[index].Reactivate(position, massValue);
+                return true;
+            }
+
+            if (_food.Count >= _config.MaximumFoodCount) return false;
+            AddFood(_nextFoodId, position, massValue);
+            return true;
         }
 
         private readonly struct CombatContact

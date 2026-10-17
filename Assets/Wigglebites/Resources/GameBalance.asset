@@ -25,6 +25,7 @@ MonoBehaviour:
   bodySampleSpacing: 0.7
   baseBodySegments: 8
   initialFoodCount: 350
+  maximumFoodCount: 500
   foodPickupRadius: 0.35
   minimumFoodMass: 1
   maximumFoodMass: 3

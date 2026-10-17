@@ -24,6 +24,7 @@ namespace Wigglebites.Config
 
         [Header("Food")]
         [SerializeField, Range(1, 500)] private int initialFoodCount = 350;
+        [SerializeField, Range(1, 1000)] private int maximumFoodCount = 500;
         [SerializeField, Min(0.05f)] private float foodPickupRadius = 0.35f;
         [SerializeField, Min(0.1f)] private float minimumFoodMass = 1f;
         [SerializeField, Min(0.1f)] private float maximumFoodMass = 3f;
@@ -70,13 +71,15 @@ namespace Wigglebites.Config
             collisionCooldownSeconds,
             safeSpawnRadius,
             spawnGraceSeconds,
-            botRespawnDelaySeconds);
+            botRespawnDelaySeconds,
+            maximumFoodCount);
 
         private void OnValidate()
         {
             boostSpeed = Mathf.Max(baseSpeed, boostSpeed);
             minimumBoostMass = Mathf.Min(startingMass, minimumBoostMass);
             maximumFoodMass = Mathf.Max(minimumFoodMass, maximumFoodMass);
+            maximumFoodCount = Mathf.Max(initialFoodCount, maximumFoodCount);
             safeSpawnRadius = Mathf.Max(
                 headRadius * 2f,
                 Mathf.Min(safeSpawnRadius, (arenaSize * 0.5f) - headRadius));

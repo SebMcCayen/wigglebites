@@ -74,6 +74,11 @@ namespace Wigglebites.Presentation
 
                 for (var segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
                 {
+                    if (segmentIndex >= snake.BodySegmentCount)
+                    {
+                        segments[segmentIndex].gameObject.SetActive(false);
+                        continue;
+                    }
                     segments[segmentIndex].gameObject.SetActive(true);
                     segments[segmentIndex].GetComponent<Renderer>().sharedMaterial = snake.IsCombatProtected
                         ? _protectedMaterial

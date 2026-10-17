@@ -12,6 +12,7 @@ namespace Wigglebites.AI
         private readonly List<BotAgent> _agents = new List<BotAgent>();
         private readonly float _perceptionRadius;
         private readonly float _respawnDelay;
+        private const float FailedRespawnRetrySeconds = 0.5f;
 
         public BotRosterController(GameSimulation simulation, int randomSeed, float perceptionRadius, float respawnDelay)
         {
@@ -41,13 +42,13 @@ namespace Wigglebites.AI
 
             for (var index = 0; index < botCount; index++)
             {
-                if (!_simulation.TryFindSafeSpawn(_random, _simulation.StartingMass, out var position))
+                if (!_simulation.TryFindSafeSpawn(_random, _simulation.StartingMass, out var position, out var heading))
                 {
                     throw new InvalidOperationException($"Could not find a safe spawn for bot {index + 1}.");
                 }
 
                 var snakeId = firstSnakeId + index;
-                _simulation.AddSnake(snakeId, false, position, CreateHeading());
+                _simulation.AddSnake(snakeId, false, position, heading);
                 _agents.Add(new BotAgent(
                     snakeId,
                     PersonalityForRosterIndex(index, botCount),
@@ -77,11 +78,15 @@ namespace Wigglebites.AI
 
                     agent.RespawnRemaining -= deltaTime;
                     if (agent.RespawnRemaining <= 0f &&
-                        _simulation.TryFindSafeSpawn(_random, _simulation.StartingMass, out var respawnPosition))
+                        _simulation.TryFindSafeSpawn(_random, _simulation.StartingMass, out var respawnPosition, out var respawnHeading))
                     {
-                        _simulation.RespawnSnake(agent.SnakeId, respawnPosition, CreateHeading());
+                        _simulation.RespawnSnake(agent.SnakeId, respawnPosition, respawnHeading);
                         agent.RespawnScheduled = false;
                         agent.DecisionRemaining = InitialDecisionDelay(agent.SnakeId);
+                    }
+                    else if (agent.RespawnRemaining <= 0f)
+                    {
+                        agent.RespawnRemaining = FailedRespawnRetrySeconds;
                     }
                     continue;
                 }
@@ -114,12 +119,6 @@ namespace Wigglebites.AI
             if (index < collectorCount + hunterCount) return BotPersonality.Hunter;
             if (index < collectorCount + hunterCount + survivorCount) return BotPersonality.Survivor;
             return BotPersonality.Aggressive;
-        }
-
-        private SimVector2 CreateHeading()
-        {
-            var angle = (float)(_random.NextDouble() * Math.PI * 2d);
-            return new SimVector2((float)Math.Cos(angle), (float)Math.Sin(angle));
         }
 
         private static float DecisionInterval(int snakeId) => 0.1f + (((snakeId * 37) % 101) / 1000f);
