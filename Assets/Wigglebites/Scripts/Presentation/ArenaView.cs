@@ -11,6 +11,7 @@ namespace Wigglebites.Presentation
         private readonly Dictionary<int, GameObject> _foodObjects = new Dictionary<int, GameObject>();
         private Material _playerMaterial;
         private Material _botMaterial;
+        private Material _protectedMaterial;
         private Material _foodMaterial;
         private Transform _dynamicRoot;
 
@@ -18,6 +19,7 @@ namespace Wigglebites.Presentation
         {
             _playerMaterial = CreateMaterial(new Color(0.09f, 0.7f, 1f), true);
             _botMaterial = CreateMaterial(new Color(1f, 0.28f, 0.12f), true);
+            _protectedMaterial = CreateMaterial(new Color(0.75f, 0.95f, 1f), true);
             _foodMaterial = CreateMaterial(new Color(1f, 0.28f, 0.85f), true);
 
             CreateArena(arenaSize);
@@ -73,6 +75,9 @@ namespace Wigglebites.Presentation
                 for (var segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
                 {
                     segments[segmentIndex].gameObject.SetActive(true);
+                    segments[segmentIndex].GetComponent<Renderer>().sharedMaterial = snake.IsCombatProtected
+                        ? _protectedMaterial
+                        : snake.IsPlayer ? _playerMaterial : _botMaterial;
                     var position = snake.GetBodyPosition(segmentIndex);
                     segments[segmentIndex].position = new Vector3(position.X, 0.65f, position.Y);
                 }

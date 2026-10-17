@@ -6,15 +6,14 @@
 - Deterministic 30 Hz simulation separated from MonoBehaviour presentation.
 - Touch-drag and keyboard steering with capped turn rate.
 - Hold-to-boost controls with configurable speed, mass drain and safe mass floor.
-- Player snake, one local collector bot, arena boundary, food pickup and mass growth.
+- Player snake, 19 local bots across four personalities, arena boundary, 350 food objects and mass growth.
 - Deterministic 1.10x mass combat, friendly elimination and configurable food drops.
+- Safe bot spawns, delayed respawns, visible non-combat grace periods and staggered 5–10 Hz AI decisions.
 - Runtime-generated placeholder arena and snake visuals.
-- EditMode tests for movement, steering, arena bounds, food collection and bot targeting.
+- EditMode tests for movement, steering, arena bounds, food collection, bot targeting and spawn lifecycle.
 
 ## Still required for MVP
 
-- Full 19-bot roster, four personalities and staggered AI decisions.
-- Safe spawning and bot respawns.
 - Match timer, leaderboard, pause/results/replay flows and local persistence.
 - Approved Neon Arena art direction, UI, VFX, audio and reduced-effects support.
 - Android build, device profiling and release-candidate validation.

@@ -19,6 +19,8 @@ namespace Wigglebites.Simulation
 
         public IReadOnlyList<SnakeState> Snakes => _snakes;
         public IReadOnlyList<FoodState> Food => _food;
+        public float StartingMass => _config.StartingMass;
+        public float CombatMassRatio => _config.CombatMassRatio;
 
         public SnakeState AddSnake(
             int id,
@@ -81,6 +83,60 @@ namespace Wigglebites.Simulation
             var snake = FindSnake(snakeId);
             if (snake == null) throw new ArgumentException($"Unknown snake id {snakeId}.", nameof(snakeId));
             snake.SetBoostRequested(requested);
+        }
+
+        public void RespawnSnake(int snakeId, SimVector2 position, SimVector2 heading)
+        {
+            var snake = FindSnake(snakeId);
+            if (snake == null) throw new ArgumentException($"Unknown snake id {snakeId}.", nameof(snakeId));
+            if (snake.IsAlive) throw new InvalidOperationException($"Snake {snakeId} is already alive.");
+            if (!IsSpawnSafe(position, _config.StartingMass)) throw new InvalidOperationException("Respawn position is not safe.");
+
+            snake.Respawn(position, heading, _config.StartingMass, _config.SpawnGraceSeconds);
+        }
+
+        public bool TryFindSafeSpawn(Random random, float candidateMass, out SimVector2 position, int maximumAttempts = 128)
+        {
+            if (random == null) throw new ArgumentNullException(nameof(random));
+            if (candidateMass <= 0f) throw new ArgumentOutOfRangeException(nameof(candidateMass));
+            if (maximumAttempts <= 0) throw new ArgumentOutOfRangeException(nameof(maximumAttempts));
+
+            var extent = (_config.ArenaSize * 0.5f) - _config.SafeSpawnRadius;
+            for (var attempt = 0; attempt < maximumAttempts; attempt++)
+            {
+                var candidate = new SimVector2(
+                    Lerp(-extent, extent, (float)random.NextDouble()),
+                    Lerp(-extent, extent, (float)random.NextDouble()));
+                if (!IsSpawnSafe(candidate, candidateMass)) continue;
+
+                position = candidate;
+                return true;
+            }
+
+            position = SimVector2.Zero;
+            return false;
+        }
+
+        public bool IsSpawnSafe(SimVector2 position, float candidateMass)
+        {
+            var extent = (_config.ArenaSize * 0.5f) - _config.SafeSpawnRadius;
+            if (Math.Abs(position.X) > extent || Math.Abs(position.Y) > extent) return false;
+
+            for (var snakeIndex = 0; snakeIndex < _snakes.Count; snakeIndex++)
+            {
+                var snake = _snakes[snakeIndex];
+                if (!snake.IsAlive || snake.Mass < candidateMass) continue;
+
+                for (var segmentIndex = 0; segmentIndex < snake.BodySegmentCount; segmentIndex++)
+                {
+                    if (SimVector2.Distance(position, snake.GetBodyPosition(segmentIndex)) < _config.SafeSpawnRadius)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         public void Tick(float deltaTime)
@@ -181,7 +237,7 @@ namespace Wigglebites.Simulation
         private bool TryGetContactPoint(SnakeState attacker, SnakeState defender, out SimVector2 contactPoint)
         {
             contactPoint = defender.Position;
-            if (attacker.CollisionCooldownRemaining > 0f) return false;
+            if (attacker.CollisionCooldownRemaining > 0f || attacker.IsCombatProtected || defender.IsCombatProtected) return false;
 
             for (var segmentIndex = 0; segmentIndex < defender.BodySegmentCount; segmentIndex++)
             {
@@ -197,6 +253,9 @@ namespace Wigglebites.Simulation
 
             return false;
         }
+
+        private static float Lerp(float minimum, float maximum, float amount) =>
+            minimum + ((maximum - minimum) * amount);
 
         private void SpawnEliminationFood(SnakeState snake)
         {

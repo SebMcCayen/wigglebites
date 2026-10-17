@@ -69,6 +69,8 @@ namespace Wigglebites.Simulation
         public bool IsAlive { get; private set; }
         public bool IsBoosting { get; private set; }
         public float CollisionCooldownRemaining { get; private set; }
+        public float SpawnGraceRemaining { get; private set; }
+        public bool IsCombatProtected => SpawnGraceRemaining > 0f;
         public int BodySegmentCount => _baseBodySegments + Math.Max(0, (int)(Mass / 10f));
 
         public void SetDesiredHeading(SimVector2 heading)
@@ -90,6 +92,7 @@ namespace Wigglebites.Simulation
             if (!IsAlive) return;
 
             CollisionCooldownRemaining = Math.Max(0f, CollisionCooldownRemaining - deltaTime);
+            SpawnGraceRemaining = Math.Max(0f, SpawnGraceRemaining - deltaTime);
 
             var angle = (float)Math.Atan2(
                 SimVector2.Cross(Heading, _desiredHeading),
@@ -144,6 +147,28 @@ namespace Wigglebites.Simulation
             IsAlive = false;
             IsBoosting = false;
             _boostRequested = false;
+        }
+
+        internal void Respawn(SimVector2 position, SimVector2 heading, float startingMass, float graceSeconds)
+        {
+            if (heading.SqrMagnitude <= 0f) throw new ArgumentException("Heading must be non-zero.", nameof(heading));
+            if (startingMass <= 0f) throw new ArgumentOutOfRangeException(nameof(startingMass));
+            if (graceSeconds < 0f) throw new ArgumentOutOfRangeException(nameof(graceSeconds));
+
+            Position = position;
+            Heading = heading.Normalized;
+            _desiredHeading = Heading;
+            Mass = startingMass;
+            IsAlive = true;
+            IsBoosting = false;
+            _boostRequested = false;
+            CollisionCooldownRemaining = 0f;
+            SpawnGraceRemaining = graceSeconds;
+            _path.Clear();
+            for (var index = 0; index < BodySegmentCount; index++)
+            {
+                _path.Add(position - (Heading * (_sampleSpacing * index)));
+            }
         }
 
         internal void ApplyDeflection(SimVector2 awayFromContact, float cooldownSeconds)

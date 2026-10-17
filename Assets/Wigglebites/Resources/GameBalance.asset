@@ -24,7 +24,7 @@ MonoBehaviour:
   bodyRadius: 0.5
   bodySampleSpacing: 0.7
   baseBodySegments: 8
-  initialFoodCount: 80
+  initialFoodCount: 350
   foodPickupRadius: 0.35
   minimumFoodMass: 1
   maximumFoodMass: 3
@@ -32,3 +32,8 @@ MonoBehaviour:
   eliminationDropFraction: 0.5
   eliminationFoodMass: 2
   collisionCooldownSeconds: 0.25
+  botCount: 19
+  botPerceptionRadius: 24
+  safeSpawnRadius: 6
+  spawnGraceSeconds: 2
+  botRespawnDelaySeconds: 3
