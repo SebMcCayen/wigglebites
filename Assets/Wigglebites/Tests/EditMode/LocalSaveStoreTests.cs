@@ -46,5 +46,28 @@ namespace Wigglebites.Tests
             Assert.That(loaded.version, Is.EqualTo(LocalSaveData.CurrentVersion));
             Assert.That(loaded.bestMass, Is.EqualTo(0f));
         }
+
+        [Test]
+        public void Load_RecoversTemporaryFileWhenPrimaryIsMissing()
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(_path + ".tmp", "{\"version\":1,\"bestMass\":75}");
+
+            var loaded = new LocalSaveStore(_path).Load();
+
+            Assert.That(loaded.bestMass, Is.EqualTo(75f));
+        }
+
+        [Test]
+        public void Load_RecoversBackupWhenPrimaryHasUnknownVersion()
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(_path, "{\"version\":999,\"bestMass\":500}");
+            File.WriteAllText(_path + ".bak", "{\"version\":1,\"bestMass\":64}");
+
+            var loaded = new LocalSaveStore(_path).Load();
+
+            Assert.That(loaded.bestMass, Is.EqualTo(64f));
+        }
     }
 }

@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using Wigglebites.Application;
 using Wigglebites.Simulation;
+using Wigglebites.UI;
 
 namespace Wigglebites.Tests
 {
@@ -59,6 +60,12 @@ namespace Wigglebites.Tests
             match.Resume();
             match.Advance(1f);
             Assert.That(match.RemainingSeconds, Is.EqualTo(179f));
+        }
+
+        [Test]
+        public void MinimumTouchHeight_MeetsFiftySixDpOnHighDensityScreen()
+        {
+            Assert.That(RuntimeHud.MinimumTouchHeight(canvasScale: 1f, dpi: 480f), Is.EqualTo(168f));
         }
 
         private static SimulationConfig CreateConfig() => new SimulationConfig(

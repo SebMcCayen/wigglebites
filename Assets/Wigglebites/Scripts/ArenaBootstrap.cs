@@ -82,6 +82,7 @@ namespace Wigglebites
             if (_match.Phase != MatchPhase.Playing)
             {
                 _accumulator = 0f;
+                if (_match.Phase == MatchPhase.Results) PersistResult();
                 _view.Render(_simulation);
                 return;
             }
@@ -93,14 +94,11 @@ namespace Wigglebites
                 _simulation.SetBoostRequested(PlayerSnakeId, _input.IsBoostHeld);
                 _botRoster.Tick(_balance.SimulationStep);
                 _simulation.Tick(_balance.SimulationStep);
-                _match.Advance(_balance.SimulationStep);
                 _accumulator -= _balance.SimulationStep;
-                if (_match.Phase == MatchPhase.Results)
-                {
-                    PersistResult();
-                    break;
-                }
             }
+
+            if (Time.unscaledDeltaTime > 0f) _match.Advance(Time.unscaledDeltaTime);
+            if (_match.Phase == MatchPhase.Results) PersistResult();
 
             _view.Render(_simulation);
             _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
@@ -139,18 +137,25 @@ namespace Wigglebites
         private void PersistResult()
         {
             if (_resultPersisted) return;
-            _resultPersisted = true;
-            if (_match.FinalPlayerMass <= _saveData.bestMass) return;
-            _saveData.bestMass = _match.FinalPlayerMass;
+            if (_match.FinalPlayerMass <= _saveData.bestMass)
+            {
+                _resultPersisted = true;
+                return;
+            }
+
+            var updatedData = new LocalSaveData { bestMass = _match.FinalPlayerMass };
             try
             {
-                _saveStore.Save(_saveData);
+                _saveStore.Save(updatedData);
+                _saveData = updatedData;
+                _resultPersisted = true;
             }
             catch (Exception exception) when (
                 exception is IOException ||
                 exception is UnauthorizedAccessException ||
                 exception is ArgumentException)
             {
+                _resultPersisted = true;
                 Debug.LogWarning($"Could not save local best mass: {exception.Message}");
             }
         }

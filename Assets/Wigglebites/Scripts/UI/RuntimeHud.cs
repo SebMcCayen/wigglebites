@@ -29,18 +29,25 @@ namespace Wigglebites.UI
             var height = safeArea.height / scale;
             var left = safeArea.xMin / scale;
             var top = (Screen.height - safeArea.yMax) / scale;
+            var touchHeight = MinimumTouchHeight(scale, Screen.dpi);
             GUI.BeginGroup(new Rect(left, top, width, height));
 
-            DrawHud(width, height);
-            if (_game.Match.Phase == MatchPhase.Menu) DrawMenu(width, height);
-            else if (_game.Match.Phase == MatchPhase.Paused) DrawPaused(width, height);
-            else if (_game.Match.Phase == MatchPhase.Results) DrawResults(width, height);
+            DrawHud(width, height, touchHeight);
+            if (_game.Match.Phase == MatchPhase.Menu) DrawMenu(width, height, touchHeight);
+            else if (_game.Match.Phase == MatchPhase.Paused) DrawPaused(width, height, touchHeight);
+            else if (_game.Match.Phase == MatchPhase.Results) DrawResults(width, height, touchHeight);
 
             GUI.EndGroup();
             GUI.matrix = oldMatrix;
         }
 
-        private void DrawHud(float width, float height)
+        public static float MinimumTouchHeight(float canvasScale, float dpi)
+        {
+            if (canvasScale <= 0f) return 82f;
+            return dpi > 0f ? Mathf.Max(58f, (56f * dpi / 160f) / canvasScale) : 82f;
+        }
+
+        private void DrawHud(float width, float height, float touchHeight)
         {
             if (_game.Match.Phase == MatchPhase.Menu) return;
             var seconds = Mathf.CeilToInt(_game.Match.RemainingSeconds);
@@ -52,20 +59,22 @@ namespace Wigglebites.UI
                 GUI.Label(new Rect(30f, 34f, 260f, 52f), $"Mass {player.Mass:0}  •  KOs {player.Eliminations}", _labelStyle);
             }
 
-            GUI.Label(new Rect(width - 290f, 94f, 250f, 44f), "TOP 5", _centerStyle);
+            var leaderboardTop = Mathf.Max(94f, 46f + touchHeight);
+            GUI.Label(new Rect(width - 290f, leaderboardTop, 250f, 44f), "TOP 5", _centerStyle);
             var count = Mathf.Min(5, _game.Match.Standings.Count);
             for (var index = 0; index < count; index++)
             {
                 var standing = _game.Match.Standings[index];
                 var name = standing.IsPlayer ? "YOU" : $"BOT {standing.SnakeId - 1}";
                 GUI.Label(
-                    new Rect(width - 310f, 138f + (index * 40f), 270f, 38f),
+                    new Rect(width - 310f, leaderboardTop + 44f + (index * 40f), 270f, 38f),
                     $"{index + 1}. {name}   {standing.Mass:0}",
                     _labelStyle);
             }
 
+            var pauseWidth = Mathf.Max(120f, touchHeight);
             if (_game.Match.Phase == MatchPhase.Playing &&
-                GUI.Button(new Rect(width - 150f, 26f, 120f, 58f), "Pause", _buttonStyle))
+                GUI.Button(new Rect(width - pauseWidth - 30f, 26f, pauseWidth, touchHeight), "Pause", _buttonStyle))
             {
                 _game.TogglePause();
             }
@@ -77,40 +86,49 @@ namespace Wigglebites.UI
             }
         }
 
-        private void DrawMenu(float width, float height)
+        private void DrawMenu(float width, float height, float touchHeight)
         {
-            DrawPanel(width, height, 470f, 360f);
-            GUI.Label(new Rect((width * 0.5f) - 200f, (height * 0.5f) - 130f, 400f, 70f), "WIGGLEBITES", _titleStyle);
+            var panelWidth = Mathf.Min(470f, width - 30f);
+            var panelHeight = Mathf.Max(360f, touchHeight + 270f);
+            var buttonWidth = Mathf.Min(280f, panelWidth - 60f);
+            DrawPanel(width, height, panelWidth, panelHeight);
+            GUI.Label(new Rect((width * 0.5f) - 200f, (height * 0.5f) - (panelHeight * 0.5f) + 30f, 400f, 70f), "WIGGLEBITES", _titleStyle);
             GUI.Label(new Rect((width * 0.5f) - 190f, (height * 0.5f) - 55f, 380f, 60f), "Grow big. Stay wiggly.\nThree-minute offline arena.", _centerStyle);
-            if (GUI.Button(new Rect((width * 0.5f) - 140f, (height * 0.5f) + 45f, 280f, 82f), "PLAY", _buttonStyle))
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) + 45f, buttonWidth, touchHeight), "PLAY", _buttonStyle))
             {
                 _game.StartMatch();
             }
         }
 
-        private void DrawPaused(float width, float height)
+        private void DrawPaused(float width, float height, float touchHeight)
         {
-            DrawPanel(width, height, 430f, 330f);
-            GUI.Label(new Rect((width * 0.5f) - 180f, (height * 0.5f) - 125f, 360f, 70f), "PAUSED", _titleStyle);
-            if (GUI.Button(new Rect((width * 0.5f) - 140f, (height * 0.5f) - 30f, 280f, 72f), "RESUME", _buttonStyle))
+            var panelWidth = Mathf.Min(430f, width - 30f);
+            var panelHeight = Mathf.Max(330f, (touchHeight * 2f) + 240f);
+            var buttonWidth = Mathf.Min(280f, panelWidth - 60f);
+            DrawPanel(width, height, panelWidth, panelHeight);
+            GUI.Label(new Rect((width * 0.5f) - 180f, (height * 0.5f) - (panelHeight * 0.5f) + 30f, 360f, 70f), "PAUSED", _titleStyle);
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) - touchHeight - 10f, buttonWidth, touchHeight), "RESUME", _buttonStyle))
             {
                 _game.TogglePause();
             }
-            if (GUI.Button(new Rect((width * 0.5f) - 140f, (height * 0.5f) + 62f, 280f, 72f), "RESTART", _buttonStyle))
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) + 10f, buttonWidth, touchHeight), "RESTART", _buttonStyle))
             {
                 _game.Replay();
             }
         }
 
-        private void DrawResults(float width, float height)
+        private void DrawResults(float width, float height, float touchHeight)
         {
-            DrawPanel(width, height, 510f, 490f);
-            GUI.Label(new Rect((width * 0.5f) - 210f, (height * 0.5f) - 205f, 420f, 70f), "ROUND COMPLETE", _titleStyle);
+            var panelWidth = Mathf.Min(510f, width - 30f);
+            var panelHeight = Mathf.Max(490f, touchHeight + 410f);
+            var buttonWidth = Mathf.Min(300f, panelWidth - 60f);
+            DrawPanel(width, height, panelWidth, panelHeight);
+            GUI.Label(new Rect((width * 0.5f) - 210f, (height * 0.5f) - (panelHeight * 0.5f) + 30f, 420f, 70f), "ROUND COMPLETE", _titleStyle);
             GUI.Label(
                 new Rect((width * 0.5f) - 200f, (height * 0.5f) - 115f, 400f, 180f),
                 $"Rank  #{_game.Match.PlayerRank}\nMass  {_game.Match.FinalPlayerMass:0}\nKOs  {_game.Match.FinalPlayerEliminations}\nBest mass  {_game.BestMass:0}",
                 _centerStyle);
-            if (GUI.Button(new Rect((width * 0.5f) - 150f, (height * 0.5f) + 95f, 300f, 82f), "PLAY AGAIN", _buttonStyle))
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) + 95f, buttonWidth, touchHeight), "PLAY AGAIN", _buttonStyle))
             {
                 _game.Replay();
             }
