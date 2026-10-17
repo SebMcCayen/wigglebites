@@ -27,12 +27,14 @@ namespace Wigglebites.Tests
         public void SaveAndLoad_RoundTripsCurrentVersion()
         {
             var store = new LocalSaveStore(_path);
-            store.Save(new LocalSaveData { bestMass = 42.5f });
+            store.Save(new LocalSaveData { bestMass = 42.5f, reducedEffects = true, soundEnabled = false });
 
             var loaded = store.Load();
 
             Assert.That(loaded.version, Is.EqualTo(LocalSaveData.CurrentVersion));
             Assert.That(loaded.bestMass, Is.EqualTo(42.5f));
+            Assert.That(loaded.reducedEffects, Is.True);
+            Assert.That(loaded.soundEnabled, Is.False);
         }
 
         [Test]
@@ -68,6 +70,20 @@ namespace Wigglebites.Tests
             var loaded = new LocalSaveStore(_path).Load();
 
             Assert.That(loaded.bestMass, Is.EqualTo(64f));
+        }
+
+        [Test]
+        public void Load_MigratesVersionOneWithAccessibleDefaults()
+        {
+            Directory.CreateDirectory(_directory);
+            File.WriteAllText(_path, "{\"version\":1,\"bestMass\":81}");
+
+            var loaded = new LocalSaveStore(_path).Load();
+
+            Assert.That(loaded.version, Is.EqualTo(LocalSaveData.CurrentVersion));
+            Assert.That(loaded.bestMass, Is.EqualTo(81f));
+            Assert.That(loaded.reducedEffects, Is.False);
+            Assert.That(loaded.soundEnabled, Is.True);
         }
     }
 }

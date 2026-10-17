@@ -7,9 +7,11 @@ namespace Wigglebites.Persistence
     [Serializable]
     public sealed class LocalSaveData
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
         public int version = CurrentVersion;
         public float bestMass;
+        public bool reducedEffects;
+        public bool soundEnabled = true;
     }
 
     public sealed class LocalSaveStore
@@ -80,12 +82,20 @@ namespace Wigglebites.Persistence
             try
             {
                 if (!File.Exists(path) || new FileInfo(path).Length > 16 * 1024) return false;
-                var candidate = JsonUtility.FromJson<LocalSaveData>(File.ReadAllText(path));
+                var json = File.ReadAllText(path);
+                var envelope = JsonUtility.FromJson<SaveVersionEnvelope>(json);
+                if (envelope != null && envelope.version == 1)
+                {
+                    var legacy = JsonUtility.FromJson<LegacyLocalSaveData>(json);
+                    if (legacy == null || !IsValidMass(legacy.bestMass)) return false;
+                    data = new LocalSaveData { bestMass = legacy.bestMass };
+                    return true;
+                }
+
+                var candidate = JsonUtility.FromJson<LocalSaveData>(json);
                 if (candidate == null ||
                     candidate.version != LocalSaveData.CurrentVersion ||
-                    candidate.bestMass < 0f ||
-                    float.IsNaN(candidate.bestMass) ||
-                    float.IsInfinity(candidate.bestMass))
+                    !IsValidMass(candidate.bestMass))
                 {
                     return false;
                 }
@@ -99,6 +109,21 @@ namespace Wigglebites.Persistence
             {
                 return false;
             }
+        }
+
+        private static bool IsValidMass(float mass) =>
+            mass >= 0f && !float.IsNaN(mass) && !float.IsInfinity(mass);
+
+        [Serializable]
+        private sealed class SaveVersionEnvelope
+        {
+            public int version;
+        }
+
+        [Serializable]
+        private sealed class LegacyLocalSaveData
+        {
+            public float bestMass;
         }
     }
 }
