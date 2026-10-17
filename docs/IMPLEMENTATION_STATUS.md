@@ -19,6 +19,6 @@
 
 ## Still required for MVP
 
-- Android build, device profiling and release-candidate validation.
+- Execute the automated Unity/Android gate and complete device profiling plus release-candidate validation on an equipped host.
 
 Unity editor, Android SDK and emulator validation must be run on a host with those tools installed.
