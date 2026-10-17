@@ -15,12 +15,20 @@ MonoBehaviour:
   arenaSize: 100
   simulationRate: 30
   baseSpeed: 5
+  boostSpeed: 8
+  boostMassCostPerSecond: 2
+  minimumBoostMass: 10
   turnRateDegrees: 180
   startingMass: 10
   headRadius: 0.65
+  bodyRadius: 0.5
   bodySampleSpacing: 0.7
   baseBodySegments: 8
   initialFoodCount: 80
   foodPickupRadius: 0.35
   minimumFoodMass: 1
   maximumFoodMass: 3
+  combatMassRatio: 1.1
+  eliminationDropFraction: 0.5
+  eliminationFoodMass: 2
+  collisionCooldownSeconds: 0.25

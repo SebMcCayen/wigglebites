@@ -9,7 +9,19 @@ namespace Wigglebites.Tests
         [Test]
         public void ChooseHeading_TargetsClosestActiveFood()
         {
-            var snake = new SnakeState(1, false, SimVector2.Zero, SimVector2.Right, 5f, 2f, 10f, 0.7f, 8);
+            var snake = new SnakeState(
+                1,
+                false,
+                SimVector2.Zero,
+                SimVector2.Right,
+                baseSpeed: 5f,
+                boostSpeed: 8f,
+                boostMassCostPerSecond: 2f,
+                minimumBoostMass: 10f,
+                turnRateRadians: 2f,
+                startingMass: 10f,
+                sampleSpacing: 0.7f,
+                baseBodySegments: 8);
             var food = new[]
             {
                 new FoodState(1, new SimVector2(8f, 0f), 1f),

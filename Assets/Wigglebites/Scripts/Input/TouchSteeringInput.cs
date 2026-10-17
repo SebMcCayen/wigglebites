@@ -7,10 +7,12 @@ namespace Wigglebites.Input
     {
         private const float MinimumDragPixels = 12f;
         private int _trackedFingerId = -1;
+        private int _boostFingerId = -1;
         private Vector2 _touchOrigin;
         private SimVector2 _desiredHeading = SimVector2.Right;
 
         public SimVector2 DesiredHeading => _desiredHeading;
+        public bool IsBoostHeld => UnityEngine.Input.GetKey(KeyCode.Space) || _boostFingerId >= 0;
 
         public void Sample()
         {
@@ -40,11 +42,26 @@ namespace Wigglebites.Input
             for (var index = 0; index < UnityEngine.Input.touchCount; index++)
             {
                 var touch = UnityEngine.Input.GetTouch(index);
-                if (_trackedFingerId < 0)
+                if (touch.phase == TouchPhase.Began)
                 {
-                    if (touch.phase != TouchPhase.Began || touch.position.x > Screen.width * 0.6f) continue;
-                    _trackedFingerId = touch.fingerId;
-                    _touchOrigin = touch.position;
+                    if (touch.position.x > Screen.width * 0.6f && _boostFingerId < 0)
+                    {
+                        _boostFingerId = touch.fingerId;
+                    }
+                    else if (_trackedFingerId < 0)
+                    {
+                        _trackedFingerId = touch.fingerId;
+                        _touchOrigin = touch.position;
+                    }
+                }
+
+                if (touch.fingerId == _boostFingerId)
+                {
+                    if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                    {
+                        _boostFingerId = -1;
+                    }
+                    continue;
                 }
 
                 if (touch.fingerId != _trackedFingerId) continue;

@@ -13,6 +13,6 @@ See `docs/DEVELOPMENT_PLAN.md` for implementation milestones.
 3. Allow Package Manager and asset imports to finish.
 4. Open `Assets/Wigglebites/Scenes/Arena.unity` and enter Play mode.
 
-Drag on the left side of an Android screen to steer. Arrow keys or WASD provide editor controls. The current build contains a steerable player snake, one collector bot, food pickup and mass growth using runtime-generated placeholder visuals.
+Drag on the left side of an Android screen to steer and hold the right side to boost. Arrow keys or WASD steer in the editor; hold Space to boost. The current build contains a steerable player snake, one collector bot, food pickup, mass growth and size-based combat using runtime-generated placeholder visuals.
 
 Run EditMode tests from **Window > General > Test Runner**. See `docs/IMPLEMENTATION_STATUS.md` for implemented and remaining MVP scope.
