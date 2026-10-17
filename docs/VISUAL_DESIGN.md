@@ -49,3 +49,10 @@ A playful premium mobile arcade aesthetic: rounded glossy snake bodies, huge fri
 ## Art handoff
 - Concept images are mood boards; do not slice them into final production sprites without reviewing licensing, resolution and consistency.
 - Create original production assets and materials from the references.
+
+## Current runtime implementation
+- Deep navy floor with an optional cyan emissive grid, luminous arena walls and corner pylons.
+- Cyan player plus orange, lime, violet and ice-blue bot palettes; cyan, pink, gold and lime food.
+- Food bobbing/rotation, pickup/elimination/results particle bursts and short generated feedback tones.
+- Reduced-effects mode removes decorative grid/pylons, food motion and particles while retaining gameplay readability; sound is independently switchable.
+- Swedish-first HUD labels are kept in the presentation layer so a future localization table can replace them without touching simulation code.

@@ -13,12 +13,12 @@
 - 180-second match timer, deterministic ranking, player-death results, pause/resume and replay.
 - Versioned local JSON persistence for best mass plus a functional runtime HUD/menu/results flow.
 - Allocation-conscious spatial hash broad phase for food pickup and snake-body combat queries, with per-tick diagnostics.
-- Runtime-generated placeholder arena and snake visuals.
+- Runtime-generated Neon Arena floor grid, luminous walls/pylons, four bot palettes, multicolor bobbing food and friendly particle/audio feedback.
+- Swedish-first HUD copy plus persistent sound and reduced-effects controls available from menu and pause.
 - EditMode tests for movement, steering, arena bounds, food collection, bot targeting and spawn lifecycle.
 
 ## Still required for MVP
 
-- Approved Neon Arena art direction, UI, VFX, audio and reduced-effects support.
 - Android build, device profiling and release-candidate validation.
 
 Unity editor, Android SDK and emulator validation must be run on a host with those tools installed.

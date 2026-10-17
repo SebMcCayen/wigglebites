@@ -32,6 +32,8 @@ namespace Wigglebites
         public MatchController Match => _match;
         public SnakeState Player => _simulation?.FindSnake(PlayerSnakeId);
         public float BestMass => _saveData?.bestMass ?? 0f;
+        public bool ReducedEffects => _saveData?.reducedEffects ?? false;
+        public bool SoundEnabled => _saveData?.soundEnabled ?? true;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateRuntime()
@@ -67,6 +69,7 @@ namespace Wigglebites
 
             _saveStore = new LocalSaveStore(Path.Combine(UnityEngine.Application.persistentDataPath, "wigglebites-save.json"));
             _saveData = _saveStore.Load();
+            _view.SetReducedEffects(_saveData.reducedEffects);
             BuildSimulation();
             _match = new MatchController(_simulation, PlayerSnakeId, _balance.MatchDurationSeconds);
             _view.Render(_simulation);
@@ -74,6 +77,8 @@ namespace Wigglebites
 
             var hud = gameObject.AddComponent<RuntimeHud>();
             hud.Configure(this);
+            var feedback = gameObject.AddComponent<ArenaFeedback>();
+            feedback.Configure(this, _view);
         }
 
         private void Update()
@@ -143,6 +148,22 @@ namespace Wigglebites
             _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
         }
 
+        public void ToggleReducedEffects()
+        {
+            var updatedData = CopySaveData();
+            updatedData.reducedEffects = !updatedData.reducedEffects;
+            if (!TrySaveData(updatedData, "effects setting")) return;
+            _saveData = updatedData;
+            _view.SetReducedEffects(_saveData.reducedEffects);
+        }
+
+        public void ToggleSound()
+        {
+            var updatedData = CopySaveData();
+            updatedData.soundEnabled = !updatedData.soundEnabled;
+            if (TrySaveData(updatedData, "sound setting")) _saveData = updatedData;
+        }
+
         private void PersistResult()
         {
             if (_resultPersisted) return;
@@ -152,20 +173,33 @@ namespace Wigglebites
                 return;
             }
 
-            var updatedData = new LocalSaveData { bestMass = _match.FinalPlayerMass };
+            var updatedData = CopySaveData();
+            updatedData.bestMass = _match.FinalPlayerMass;
+            if (TrySaveData(updatedData, "best mass")) _saveData = updatedData;
+            _resultPersisted = true;
+        }
+
+        private LocalSaveData CopySaveData() => new LocalSaveData
+        {
+            bestMass = _saveData.bestMass,
+            reducedEffects = _saveData.reducedEffects,
+            soundEnabled = _saveData.soundEnabled
+        };
+
+        private bool TrySaveData(LocalSaveData data, string description)
+        {
             try
             {
-                _saveStore.Save(updatedData);
-                _saveData = updatedData;
-                _resultPersisted = true;
+                _saveStore.Save(data);
+                return true;
             }
             catch (Exception exception) when (
                 exception is IOException ||
                 exception is UnauthorizedAccessException ||
                 exception is ArgumentException)
             {
-                _resultPersisted = true;
-                Debug.LogWarning($"Could not save local best mass: {exception.Message}");
+                Debug.LogWarning($"Could not save local {description}: {exception.Message}");
+                return false;
             }
         }
 
