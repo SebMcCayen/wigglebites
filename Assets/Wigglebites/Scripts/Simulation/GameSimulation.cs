@@ -8,6 +8,7 @@ namespace Wigglebites.Simulation
         private readonly SimulationConfig _config;
         private readonly List<SnakeState> _snakes = new List<SnakeState>();
         private readonly List<FoodState> _food = new List<FoodState>();
+        private readonly List<CombatContact> _combatContacts = new List<CombatContact>();
         private readonly HashSet<int> _pendingEliminations = new HashSet<int>();
         private int _nextFoodId = 1;
 
@@ -113,6 +114,7 @@ namespace Wigglebites.Simulation
 
         private void ResolveCombat()
         {
+            _combatContacts.Clear();
             _pendingEliminations.Clear();
 
             for (var leftIndex = 0; leftIndex < _snakes.Count; leftIndex++)
@@ -130,28 +132,40 @@ namespace Wigglebites.Simulation
 
                     if (leftTouchesRight)
                     {
-                        if (left.Mass >= right.Mass * _config.CombatMassRatio)
-                        {
-                            _pendingEliminations.Add(right.Id);
-                        }
-                        else
-                        {
-                            left.ApplyDeflection(left.Position - rightContact, _config.CollisionCooldownSeconds);
-                        }
+                        _combatContacts.Add(new CombatContact(
+                            left,
+                            right,
+                            rightContact,
+                            left.Mass >= right.Mass * _config.CombatMassRatio));
                     }
 
                     if (rightTouchesLeft)
                     {
-                        if (right.Mass >= left.Mass * _config.CombatMassRatio)
-                        {
-                            _pendingEliminations.Add(left.Id);
-                        }
-                        else
-                        {
-                            right.ApplyDeflection(right.Position - leftContact, _config.CollisionCooldownSeconds);
-                        }
+                        _combatContacts.Add(new CombatContact(
+                            right,
+                            left,
+                            leftContact,
+                            right.Mass >= left.Mass * _config.CombatMassRatio));
                     }
                 }
+            }
+
+            for (var index = 0; index < _combatContacts.Count; index++)
+            {
+                var contact = _combatContacts[index];
+                if (contact.AttackerQualifies)
+                {
+                    _pendingEliminations.Add(contact.Defender.Id);
+                }
+            }
+
+            for (var index = 0; index < _combatContacts.Count; index++)
+            {
+                var contact = _combatContacts[index];
+                if (contact.AttackerQualifies) continue;
+                contact.Attacker.ApplyDeflection(
+                    contact.Attacker.Position - contact.ContactPoint,
+                    _config.CollisionCooldownSeconds);
             }
 
             for (var index = 0; index < _snakes.Count; index++)
@@ -201,6 +215,26 @@ namespace Wigglebites.Simulation
                 remainingMass -= foodMass;
                 index++;
             }
+        }
+
+        private readonly struct CombatContact
+        {
+            public CombatContact(
+                SnakeState attacker,
+                SnakeState defender,
+                SimVector2 contactPoint,
+                bool attackerQualifies)
+            {
+                Attacker = attacker;
+                Defender = defender;
+                ContactPoint = contactPoint;
+                AttackerQualifies = attackerQualifies;
+            }
+
+            public SnakeState Attacker { get; }
+            public SnakeState Defender { get; }
+            public SimVector2 ContactPoint { get; }
+            public bool AttackerQualifies { get; }
         }
     }
 }

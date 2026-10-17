@@ -125,5 +125,20 @@ namespace Wigglebites.Tests
             Assert.That(left.CollisionCooldownRemaining, Is.GreaterThan(0f));
             Assert.That(right.CollisionCooldownRemaining, Is.GreaterThan(0f));
         }
+
+        [Test]
+        public void Tick_UsesOneContactSnapshotAcrossThreeSnakes()
+        {
+            var simulation = new GameSimulation(CreateConfig());
+            var first = simulation.AddSnake(1, true, SimVector2.Zero, SimVector2.Right, startingMass: 11f);
+            var second = simulation.AddSnake(2, false, SimVector2.Zero, SimVector2.Right, startingMass: 10.5f);
+            var third = simulation.AddSnake(3, false, SimVector2.Zero, SimVector2.Right, startingMass: 10f);
+
+            simulation.Tick(0.01f);
+
+            Assert.That(first.IsAlive, Is.True);
+            Assert.That(second.IsAlive, Is.True);
+            Assert.That(third.IsAlive, Is.False, "The first snake must still resolve its later qualifying contact.");
+        }
     }
 }
