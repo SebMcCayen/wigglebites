@@ -86,6 +86,14 @@ namespace Wigglebites
                 _view.Render(_simulation);
                 return;
             }
+
+            if (Time.unscaledDeltaTime > 0f) _match.Advance(Time.unscaledDeltaTime);
+            if (_match.Phase == MatchPhase.Results)
+            {
+                PersistResult();
+                _view.Render(_simulation);
+                return;
+            }
             _accumulator = Mathf.Min(_accumulator + Time.deltaTime, _balance.SimulationStep * 4f);
 
             while (_accumulator >= _balance.SimulationStep)
@@ -94,10 +102,11 @@ namespace Wigglebites
                 _simulation.SetBoostRequested(PlayerSnakeId, _input.IsBoostHeld);
                 _botRoster.Tick(_balance.SimulationStep);
                 _simulation.Tick(_balance.SimulationStep);
+                _match.EvaluateCurrentState();
                 _accumulator -= _balance.SimulationStep;
+                if (_match.Phase == MatchPhase.Results) break;
             }
 
-            if (Time.unscaledDeltaTime > 0f) _match.Advance(Time.unscaledDeltaTime);
             if (_match.Phase == MatchPhase.Results) PersistResult();
 
             _view.Render(_simulation);

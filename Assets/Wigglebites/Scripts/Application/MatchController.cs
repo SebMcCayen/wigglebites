@@ -66,12 +66,20 @@ namespace Wigglebites.Application
             if (Phase != MatchPhase.Playing) return;
 
             RemainingSeconds = Math.Max(0f, RemainingSeconds - deltaTime);
-            RefreshStandings();
-            var player = _simulation.FindSnake(_playerSnakeId);
-            if (RemainingSeconds <= 0f || player == null || !player.IsAlive)
+            if (RemainingSeconds <= 0f)
             {
                 Finish();
+                return;
             }
+            EvaluateCurrentState();
+        }
+
+        public void EvaluateCurrentState()
+        {
+            if (Phase != MatchPhase.Playing) return;
+            RefreshStandings();
+            var player = _simulation.FindSnake(_playerSnakeId);
+            if (player == null || !player.IsAlive) Finish();
         }
 
         public void Pause()
