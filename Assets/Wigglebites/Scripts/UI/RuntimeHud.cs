@@ -90,19 +90,21 @@ namespace Wigglebites.UI
         {
             var panelWidth = Mathf.Min(470f, width - 30f);
             var panelHeight = Mathf.Max(570f, (touchHeight * 3f) + 300f);
-            var buttonWidth = Mathf.Min(280f, panelWidth - 60f);
+            var buttonWidth = Mathf.Min(420f, panelWidth - 40f);
             DrawPanel(width, height, panelWidth, panelHeight);
-            GUI.Label(new Rect((width * 0.5f) - 200f, (height * 0.5f) - (panelHeight * 0.5f) + 30f, 400f, 70f), "WIGGLEBITES", _titleStyle);
-            GUI.Label(new Rect((width * 0.5f) - 190f, (height * 0.5f) - 135f, 380f, 60f), "Väx dig stor. Fortsätt slingra.\nTre minuter, helt offline.", _centerStyle);
-            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) - 45f, buttonWidth, touchHeight), _game.ReducedEffects ? "[FX] EFFEKTER: MINSKADE" : "[FX] EFFEKTER: FULLA", _buttonStyle))
+            var panelTop = (height - panelHeight) * 0.5f;
+            var firstButtonY = panelTop + 200f;
+            GUI.Label(new Rect((width * 0.5f) - 200f, panelTop + 30f, 400f, 70f), "WIGGLEBITES", _titleStyle);
+            GUI.Label(new Rect((width * 0.5f) - 190f, panelTop + 110f, 380f, 60f), "Väx dig stor. Fortsätt slingra.\nTre minuter, helt offline.", _centerStyle);
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, firstButtonY, buttonWidth, touchHeight), _game.ReducedEffects ? "[FX] EFFEKTER: MINSKADE" : "[FX] EFFEKTER: FULLA", _buttonStyle))
             {
                 _game.ToggleReducedEffects();
             }
-            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) + touchHeight + 5f, buttonWidth, touchHeight), _game.SoundEnabled ? "[LJUD] PÅ" : "[LJUD] AV", _buttonStyle))
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, firstButtonY + touchHeight + 18f, buttonWidth, touchHeight), _game.SoundEnabled ? "[LJUD] PÅ" : "[LJUD] AV", _buttonStyle))
             {
                 _game.ToggleSound();
             }
-            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, (height * 0.5f) + (touchHeight * 2f) + 55f, buttonWidth, touchHeight), "SPELA", _buttonStyle))
+            if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, firstButtonY + ((touchHeight + 18f) * 2f), buttonWidth, touchHeight), "SPELA", _buttonStyle))
             {
                 _game.StartMatch();
             }
@@ -111,11 +113,12 @@ namespace Wigglebites.UI
         private void DrawPaused(float width, float height, float touchHeight)
         {
             var panelWidth = Mathf.Min(430f, width - 30f);
-            var panelHeight = Mathf.Max(590f, (touchHeight * 4f) + 260f);
-            var buttonWidth = Mathf.Min(280f, panelWidth - 60f);
+            var panelHeight = Mathf.Max(590f, (touchHeight * 4f) + 220f);
+            var buttonWidth = Mathf.Min(390f, panelWidth - 40f);
             DrawPanel(width, height, panelWidth, panelHeight);
-            GUI.Label(new Rect((width * 0.5f) - 180f, (height * 0.5f) - (panelHeight * 0.5f) + 30f, 360f, 70f), "PAUS", _titleStyle);
-            var firstButtonY = (height * 0.5f) - (touchHeight * 1.8f);
+            var panelTop = (height - panelHeight) * 0.5f;
+            GUI.Label(new Rect((width * 0.5f) - 180f, panelTop + 30f, 360f, 70f), "PAUS", _titleStyle);
+            var firstButtonY = panelTop + 120f;
             if (GUI.Button(new Rect((width - buttonWidth) * 0.5f, firstButtonY, buttonWidth, touchHeight), "FORTSÄTT", _buttonStyle))
             {
                 _game.TogglePause();
