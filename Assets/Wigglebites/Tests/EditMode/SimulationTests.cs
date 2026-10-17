@@ -177,5 +177,30 @@ namespace Wigglebites.Tests
             Assert.That(pooledFood.IsActive, Is.True);
             Assert.That(pooledFood.MassValue, Is.EqualTo(2f));
         }
+
+        [Test]
+        public void Tick_SpatialIndexBoundsCandidateChecksForMvpPopulation()
+        {
+            var simulation = new GameSimulation(CreateConfig(arenaSize: 500f));
+            for (var index = 0; index < 20; index++)
+            {
+                var x = -160f + ((index % 5) * 80f);
+                var y = -120f + ((index / 5) * 80f);
+                simulation.AddSnake(index + 1, index == 0, new SimVector2(x, y), SimVector2.Right);
+            }
+            for (var index = 0; index < 350; index++)
+            {
+                var x = -200f + ((index % 25) * 16f);
+                var y = -104f + ((index / 25) * 16f);
+                simulation.AddFood(index + 1, new SimVector2(x, y), 1f);
+            }
+
+            simulation.Tick(0.01f);
+
+            Assert.That(simulation.LastDiagnostics.IndexedFoodCount, Is.EqualTo(350));
+            Assert.That(simulation.LastDiagnostics.FoodDistanceChecks, Is.LessThan(100));
+            Assert.That(simulation.LastDiagnostics.IndexedBodyPointCount, Is.EqualTo(180));
+            Assert.That(simulation.LastDiagnostics.CombatDistanceChecks, Is.LessThan(100));
+        }
     }
 }

@@ -12,6 +12,7 @@
 - Bounded 500-item food-state/visual pool with inactive-item reuse for elimination drops.
 - 180-second match timer, deterministic ranking, player-death results, pause/resume and replay.
 - Versioned local JSON persistence for best mass plus a functional runtime HUD/menu/results flow.
+- Allocation-conscious spatial hash broad phase for food pickup and snake-body combat queries, with per-tick diagnostics.
 - Runtime-generated placeholder arena and snake visuals.
 - EditMode tests for movement, steering, arena bounds, food collection, bot targeting and spawn lifecycle.
 

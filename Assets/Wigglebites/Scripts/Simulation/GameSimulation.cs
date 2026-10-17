@@ -11,17 +11,27 @@ namespace Wigglebites.Simulation
         private readonly List<CombatContact> _combatContacts = new List<CombatContact>();
         private readonly HashSet<int> _pendingEliminations = new HashSet<int>();
         private readonly Dictionary<int, int> _eliminators = new Dictionary<int, int>();
+        private readonly SpatialHash2D<FoodState> _foodIndex;
+        private readonly SpatialHash2D<BodyPoint> _bodyIndex;
+        private readonly List<FoodState> _nearbyFood = new List<FoodState>();
+        private readonly List<BodyPoint> _nearbyBodyPoints = new List<BodyPoint>();
+        private readonly Dictionary<ContactKey, BodyPoint> _contactPoints = new Dictionary<ContactKey, BodyPoint>();
+        private int _foodDistanceChecks;
+        private int _combatDistanceChecks;
         private int _nextFoodId = 1;
 
         public GameSimulation(SimulationConfig config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _foodIndex = new SpatialHash2D<FoodState>(_config.SpatialCellSize);
+            _bodyIndex = new SpatialHash2D<BodyPoint>(_config.SpatialCellSize);
         }
 
         public IReadOnlyList<SnakeState> Snakes => _snakes;
         public IReadOnlyList<FoodState> Food => _food;
         public float StartingMass => _config.StartingMass;
         public float CombatMassRatio => _config.CombatMassRatio;
+        public SimulationDiagnostics LastDiagnostics { get; private set; }
 
         public SnakeState AddSnake(
             int id,
@@ -161,6 +171,10 @@ namespace Wigglebites.Simulation
 
         public void Tick(float deltaTime)
         {
+            if (deltaTime <= 0f) throw new ArgumentOutOfRangeException(nameof(deltaTime));
+            _foodDistanceChecks = 0;
+            _combatDistanceChecks = 0;
+            RebuildFoodIndex();
             var halfExtent = (_config.ArenaSize * 0.5f) - _config.HeadRadius;
             for (var snakeIndex = 0; snakeIndex < _snakes.Count; snakeIndex++)
             {
@@ -172,16 +186,23 @@ namespace Wigglebites.Simulation
             }
 
             ResolveCombat();
+            LastDiagnostics = new SimulationDiagnostics(
+                _foodIndex.Count,
+                _bodyIndex.Count,
+                _foodDistanceChecks,
+                _combatDistanceChecks);
         }
 
         private void ConsumeNearbyFood(SnakeState snake)
         {
             var pickupDistance = _config.HeadRadius + _config.FoodPickupRadius;
             var pickupDistanceSquared = pickupDistance * pickupDistance;
-            for (var foodIndex = 0; foodIndex < _food.Count; foodIndex++)
+            _foodIndex.Query(snake.Position, pickupDistance, _nearbyFood);
+            for (var foodIndex = 0; foodIndex < _nearbyFood.Count; foodIndex++)
             {
-                var item = _food[foodIndex];
+                var item = _nearbyFood[foodIndex];
                 if (!item.IsActive) continue;
+                _foodDistanceChecks++;
                 if ((snake.Position - item.Position).SqrMagnitude > pickupDistanceSquared) continue;
 
                 item.Consume();
@@ -194,6 +215,7 @@ namespace Wigglebites.Simulation
             _combatContacts.Clear();
             _pendingEliminations.Clear();
             _eliminators.Clear();
+            BuildContactLookup();
 
             for (var leftIndex = 0; leftIndex < _snakes.Count; leftIndex++)
             {
@@ -268,21 +290,62 @@ namespace Wigglebites.Simulation
         private bool TryGetContactPoint(SnakeState attacker, SnakeState defender, out SimVector2 contactPoint)
         {
             contactPoint = defender.Position;
-            if (attacker.CollisionCooldownRemaining > 0f || attacker.IsCombatProtected || defender.IsCombatProtected) return false;
+            if (!_contactPoints.TryGetValue(new ContactKey(attacker.Id, defender.Id), out var bodyPoint)) return false;
+            contactPoint = bodyPoint.Position;
+            return true;
+        }
 
-            for (var segmentIndex = 0; segmentIndex < defender.BodySegmentCount; segmentIndex++)
+        private void RebuildFoodIndex()
+        {
+            _foodIndex.Clear();
+            for (var index = 0; index < _food.Count; index++)
             {
-                var segmentPosition = defender.GetBodyPosition(segmentIndex);
-                var contactDistance = segmentIndex == 0
-                    ? _config.HeadRadius * 2f
-                    : _config.HeadRadius + _config.BodyRadius;
-                if (SimVector2.Distance(attacker.Position, segmentPosition) > contactDistance) continue;
+                var item = _food[index];
+                if (item.IsActive) _foodIndex.Insert(item.Position, item);
+            }
+        }
 
-                contactPoint = segmentPosition;
-                return true;
+        private void BuildContactLookup()
+        {
+            _bodyIndex.Clear();
+            _contactPoints.Clear();
+            for (var snakeIndex = 0; snakeIndex < _snakes.Count; snakeIndex++)
+            {
+                var snake = _snakes[snakeIndex];
+                if (!snake.IsAlive) continue;
+                for (var segmentIndex = 0; segmentIndex < snake.BodySegmentCount; segmentIndex++)
+                {
+                    var position = snake.GetBodyPosition(segmentIndex);
+                    _bodyIndex.Insert(position, new BodyPoint(snake, segmentIndex, position));
+                }
             }
 
-            return false;
+            var maximumContactDistance = Math.Max(
+                _config.HeadRadius * 2f,
+                _config.HeadRadius + _config.BodyRadius);
+            for (var attackerIndex = 0; attackerIndex < _snakes.Count; attackerIndex++)
+            {
+                var attacker = _snakes[attackerIndex];
+                if (!attacker.IsAlive || attacker.CollisionCooldownRemaining > 0f || attacker.IsCombatProtected) continue;
+                _bodyIndex.Query(attacker.Position, maximumContactDistance, _nearbyBodyPoints);
+                for (var pointIndex = 0; pointIndex < _nearbyBodyPoints.Count; pointIndex++)
+                {
+                    var point = _nearbyBodyPoints[pointIndex];
+                    if (point.Snake.Id == attacker.Id || point.Snake.IsCombatProtected) continue;
+
+                    var contactDistance = point.SegmentIndex == 0
+                        ? _config.HeadRadius * 2f
+                        : _config.HeadRadius + _config.BodyRadius;
+                    _combatDistanceChecks++;
+                    if ((attacker.Position - point.Position).SqrMagnitude > contactDistance * contactDistance) continue;
+
+                    var key = new ContactKey(attacker.Id, point.Snake.Id);
+                    if (!_contactPoints.TryGetValue(key, out var current) || point.SegmentIndex < current.SegmentIndex)
+                    {
+                        _contactPoints[key] = point;
+                    }
+                }
+            }
         }
 
         private static float Lerp(float minimum, float maximum, float amount) =>
@@ -339,6 +402,36 @@ namespace Wigglebites.Simulation
             public SnakeState Defender { get; }
             public SimVector2 ContactPoint { get; }
             public bool AttackerQualifies { get; }
+        }
+
+        private readonly struct BodyPoint
+        {
+            public BodyPoint(SnakeState snake, int segmentIndex, SimVector2 position)
+            {
+                Snake = snake;
+                SegmentIndex = segmentIndex;
+                Position = position;
+            }
+
+            public SnakeState Snake { get; }
+            public int SegmentIndex { get; }
+            public SimVector2 Position { get; }
+        }
+
+        private readonly struct ContactKey : IEquatable<ContactKey>
+        {
+            public ContactKey(int attackerId, int defenderId)
+            {
+                AttackerId = attackerId;
+                DefenderId = defenderId;
+            }
+
+            public int AttackerId { get; }
+            public int DefenderId { get; }
+
+            public bool Equals(ContactKey other) => AttackerId == other.AttackerId && DefenderId == other.DefenderId;
+            public override bool Equals(object obj) => obj is ContactKey other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(AttackerId, DefenderId);
         }
     }
 }

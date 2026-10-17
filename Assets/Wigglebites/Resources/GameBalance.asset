@@ -30,6 +30,7 @@ MonoBehaviour:
   foodPickupRadius: 0.35
   minimumFoodMass: 1
   maximumFoodMass: 3
+  spatialCellSize: 4
   combatMassRatio: 1.1
   eliminationDropFraction: 0.5
   eliminationFoodMass: 2
