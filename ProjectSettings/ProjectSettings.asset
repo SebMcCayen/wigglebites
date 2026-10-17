@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 27
+  productGUID: 65488b8b50294897ab6594d69df6c771
+  AndroidProfiler: 0
+  AndroidFilterTouchesWhenObscured: 1
+  AndroidEnableSustainedPerformanceMode: 1
+  companyName: Wigglebites
+  productName: Wigglebites
+  defaultScreenWidth: 1080
+  defaultScreenHeight: 1920
+  defaultScreenOrientation: 1
+  usePlayerLog: 1
+  runInBackground: 0
+  captureSingleScreen: 0
+  resizableWindow: 0
+  applicationIdentifier:
+    Android: com.wigglebites.snakearena
+  bundleVersion: 0.1.0
+  AndroidBundleVersionCode: 1
+  AndroidMinSdkVersion: 26
+  AndroidTargetSdkVersion: 0
+  AndroidPreferredInstallLocation: 1
+  scriptingBackend:
+    Android: 1
+  il2cppCompilerConfiguration:
+    Android: 0
+  stripEngineCode: 1
+  managedStrippingLevel:
+    Android: 1
+  allowUnsafeCode: 0
+  useDeterministicCompilation: 1
