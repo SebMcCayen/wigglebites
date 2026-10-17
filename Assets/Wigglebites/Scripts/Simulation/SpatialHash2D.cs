@@ -7,6 +7,7 @@ namespace Wigglebites.Simulation
     {
         private readonly float _cellSize;
         private readonly Dictionary<Cell, List<T>> _buckets = new Dictionary<Cell, List<T>>();
+        private readonly List<List<T>> _activeBuckets = new List<List<T>>();
 
         public SpatialHash2D(float cellSize)
         {
@@ -18,7 +19,8 @@ namespace Wigglebites.Simulation
 
         public void Clear()
         {
-            foreach (var bucket in _buckets.Values) bucket.Clear();
+            for (var index = 0; index < _activeBuckets.Count; index++) _activeBuckets[index].Clear();
+            _activeBuckets.Clear();
             Count = 0;
         }
 
@@ -31,6 +33,7 @@ namespace Wigglebites.Simulation
                 _buckets.Add(cell, bucket);
             }
 
+            if (bucket.Count == 0) _activeBuckets.Add(bucket);
             bucket.Add(item);
             Count++;
         }
