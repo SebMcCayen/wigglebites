@@ -35,6 +35,8 @@ Assets/
 ## Core modules
 GameManager, MatchTimer, SnakeSimulation, SnakeView, SnakeBodyPath, InputController, CollisionSystem, GrowthSystem, AISystem, FoodManager, SpawnSystem, CameraController, SaveManager.
 
+The current simulation rebuilds reusable spatial hashes once per fixed tick for active food and live body samples. Queries return broad-phase candidates into retained lists; exact squared-distance checks preserve collision semantics, and pair resolution remains in stable snake-list order. `SimulationDiagnostics` exposes candidate-check counts for regression tests and device profiling.
+
 ## Tests
 - Combat eligibility at 1.10 threshold, ties and simultaneous head collisions.
 - Growth, food pickup, boost floor, body following, obstacle collision.
