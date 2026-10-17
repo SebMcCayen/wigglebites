@@ -158,7 +158,7 @@ namespace Wigglebites.Editor
             var outputDirectory = Path.GetDirectoryName(outputPath);
             var matchingEntries = !string.IsNullOrEmpty(outputDirectory) && Directory.Exists(outputDirectory)
                 ? Directory.EnumerateFileSystemEntries(outputDirectory)
-                    .Where(entry => string.Equals(Path.GetFullPath(entry), outputPath, StringComparison.Ordinal))
+                    .Where(entry => string.Equals(Path.GetFullPath(entry), outputPath, StringComparison.OrdinalIgnoreCase))
                     .ToArray()
                 : Array.Empty<string>();
             if (matchingEntries.Length != 0)

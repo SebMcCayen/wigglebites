@@ -2,6 +2,23 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+reject_linked_path_components() {
+  local candidate="$1"
+  local current="$candidate"
+  while [[ "$current" != "$project_dir" && "$current" != "/" ]]; do
+    if [[ -L "$current" ]]; then
+      echo "Validation path must not contain symbolic links: $current" >&2
+      exit 2
+    fi
+    current="$(dirname "$current")"
+  done
+  if [[ "$current" != "$project_dir" ]]; then
+    echo "Validation path escaped the project directory: $candidate" >&2
+    exit 2
+  fi
+}
+
 unity_bin="${UNITY_PATH:-}"
 if [[ -z "$unity_bin" ]]; then
   default_unity="/Applications/Unity/Hub/Editor/6000.0.23f1/Unity.app/Contents/MacOS/Unity"
@@ -23,14 +40,24 @@ if [[ "$unity_version" != "6000.0.23f1" ]]; then
   exit 2
 fi
 
+reject_linked_path_components "$project_dir/Builds/Validation"
+reject_linked_path_components "$project_dir/Logs"
 mkdir -p "$project_dir/Builds/Validation" "$project_dir/Logs"
 test_results="$project_dir/Builds/Validation/editmode-results.xml"
+editmode_log="$project_dir/Logs/editmode-tests.log"
+android_build_log="$project_dir/Logs/android-build.log"
+for output_file in "$test_results" "$editmode_log" "$android_build_log"; do
+  if [[ -L "$output_file" ]]; then
+    echo "Validation output must not be a symbolic link: $output_file" >&2
+    exit 2
+  fi
+done
 rm -f "$test_results"
 "$unity_bin" -batchmode -nographics \
   -projectPath "$project_dir" \
   -runTests -testPlatform EditMode \
   -testResults "$test_results" \
-  -logFile "$project_dir/Logs/editmode-tests.log"
+  -logFile "$editmode_log"
 
 python3 - "$test_results" <<'PY'
 import pathlib
@@ -60,6 +87,6 @@ WIGGLEBITES_BUILD_PATH="$build_path" \
 "$unity_bin" -batchmode -nographics -quit \
   -projectPath "$project_dir" \
   -executeMethod Wigglebites.Editor.AndroidBuild.BuildValidation \
-  -logFile "$project_dir/Logs/android-build.log"
+  -logFile "$android_build_log"
 
 echo "Validation complete: EditMode tests and Android validation APK succeeded at $build_path."
