@@ -63,6 +63,7 @@ namespace Wigglebites.Tests
             simulation.Tick(0.2f);
 
             Assert.That(snake.Position.X, Is.EqualTo(1.5f).Within(0.0001f));
+            Assert.That(snake.GetBodyPosition(0).X, Is.EqualTo(1.5f).Within(0.0001f));
             Assert.That(snake.Heading.X, Is.LessThan(0f));
         }
     }

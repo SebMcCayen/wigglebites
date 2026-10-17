@@ -120,6 +120,7 @@ namespace Wigglebites.Simulation
             if (hitHorizontalWall) reflected = new SimVector2(reflected.X, -reflected.Y);
             Heading = reflected.Normalized;
             _desiredHeading = Heading;
+            if (_path.Count > 0) _path[0] = Position;
         }
 
         private void RecordPathSample()
