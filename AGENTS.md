@@ -20,8 +20,13 @@ This file and `docs/` describe the NEW approved direction. The former Kotlin/mul
 - Design touch targets for children; do not rely solely on text or color to communicate danger.
 - Keep features and effects accessible, avoid excessive flashes, include sound toggles.
 - Keep changes small, run applicable tests, and report what was and wasn't verified.
-- Do not ask GitHub Copilot to review code or PRs.
 - Do not silently reinterpret open questions. Document them and ask before major architecture changes.
+
+## Pull request review policy
+- Never request, enable or rely on GitHub Copilot to review code or pull requests.
+- Every pull request must be reviewed through both `@github` and `@codex-security` before it is merged.
+- Review the complete pull request diff and use the Codex Security diff-scan workflow for the security review.
+- Resolve review findings before merge, or document their disposition and obtain explicit approval to accept the risk.
 
 ## Workflow
 1. Read `docs/GAME_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/VISUAL_DESIGN.md`, `docs/GAME_MECHANICS.md`, `docs/DEVELOPMENT_PLAN.md` and `design/`.
