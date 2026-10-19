@@ -2,6 +2,7 @@
 set -euo pipefail
 
 project_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$project_dir/scripts/lib/unity-version.sh"
 
 reject_linked_path_components() {
   local candidate="$1"
@@ -35,7 +36,7 @@ fi
 unity_version_output="$("$unity_bin" -version 2>/dev/null | tr -d '\r')"
 unity_version_line="${unity_version_output%%$'\n'*}"
 unity_version="${unity_version_line%%[[:space:]]*}"
-if [[ "$unity_version" != "6000.0.23f1" ]]; then
+if ! wigglebites_unity_version_matches "6000.0.23f1" "$unity_version"; then
   echo "Expected Unity 6000.0.23f1, found: ${unity_version:-unknown}" >&2
   exit 2
 fi
