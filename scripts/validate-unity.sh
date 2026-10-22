@@ -87,6 +87,7 @@ build_path="${WIGGLEBITES_BUILD_PATH:-Builds/Android/Wigglebites.apk}"
 WIGGLEBITES_BUILD_PATH="$build_path" \
 "$unity_bin" -batchmode -nographics -quit \
   -projectPath "$project_dir" \
+  -buildTarget Android \
   -executeMethod Wigglebites.Editor.AndroidBuild.BuildValidation \
   -logFile "$android_build_log"
 

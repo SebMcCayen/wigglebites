@@ -16,6 +16,17 @@ Run the version-matching regression test without launching Unity:
 ./scripts/tests/unity-version-test.sh
 ```
 
+For an Intel Android emulator, build the separate x86_64 development APK. This artifact is only for emulator QA and does not change the ARM64 validation or release configuration:
+
+```bash
+/path/to/Unity -batchmode -quit -projectPath "$PWD" \
+  -buildTarget Android \
+  -executeMethod Wigglebites.Editor.AndroidBuild.BuildEmulatorApk \
+  -logFile Logs/android-emulator-build.log
+```
+
+The default output is `Builds/Android/Wigglebites-emulator.apk`. It uses x86_64 for the local debug emulator; ARM64 validation and release builds are unchanged. As with other local builds, `WIGGLEBITES_BUILD_PATH` may override it with another `.apk` path below `Builds/`.
+
 `Wigglebites.Editor.AndroidBuild.BuildRelease` is the separate release entry point. It fails closed unless Unity has a custom keystore, alias and passwords. A clean batch job can inject them with `WIGGLEBITES_KEYSTORE_PATH`, `WIGGLEBITES_KEYSTORE_PASSWORD`, `WIGGLEBITES_KEY_ALIAS` and `WIGGLEBITES_KEY_PASSWORD`; all four must be present together. The values are restored after the build and are never logged. Set `WIGGLEBITES_BUILD_AAB=1` for an Android App Bundle and use a `.aab` path below `Builds/`. Signing files and credentials must remain outside the repository and must never be written to build logs.
 
 ## Device acceptance checklist

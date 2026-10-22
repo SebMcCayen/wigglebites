@@ -1,0 +1,7 @@
+<linker>
+  <!-- Runtime primitives add these concrete collider types internally. -->
+  <assembly fullname="UnityEngine.PhysicsModule">
+    <type fullname="UnityEngine.BoxCollider" preserve="all" />
+    <type fullname="UnityEngine.SphereCollider" preserve="all" />
+  </assembly>
+</linker>
