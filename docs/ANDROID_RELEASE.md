@@ -20,6 +20,7 @@ For an Intel Android emulator, build the separate x86_64 development APK. This a
 
 ```bash
 /path/to/Unity -batchmode -quit -projectPath "$PWD" \
+  -buildTarget Android \
   -executeMethod Wigglebites.Editor.AndroidBuild.BuildEmulatorApk \
   -logFile Logs/android-emulator-build.log
 ```
