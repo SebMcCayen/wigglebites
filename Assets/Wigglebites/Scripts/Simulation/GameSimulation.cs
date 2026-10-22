@@ -5,6 +5,8 @@ namespace Wigglebites.Simulation
 {
     public sealed class GameSimulation
     {
+        private const float CombatThresholdRelativeTolerance = 0.00001f;
+
         private readonly SimulationConfig _config;
         private readonly List<SnakeState> _snakes = new List<SnakeState>();
         private readonly List<FoodState> _food = new List<FoodState>();
@@ -236,7 +238,7 @@ namespace Wigglebites.Simulation
                             left,
                             right,
                             rightContact,
-                            left.Mass >= right.Mass * _config.CombatMassRatio));
+                            MeetsCombatThreshold(left.Mass, right.Mass)));
                     }
 
                     if (rightTouchesLeft)
@@ -245,7 +247,7 @@ namespace Wigglebites.Simulation
                             right,
                             left,
                             leftContact,
-                            right.Mass >= left.Mass * _config.CombatMassRatio));
+                            MeetsCombatThreshold(right.Mass, left.Mass)));
                     }
                 }
             }
@@ -293,6 +295,13 @@ namespace Wigglebites.Simulation
             if (!_contactPoints.TryGetValue(new ContactKey(attacker.Id, defender.Id), out var bodyPoint)) return false;
             contactPoint = bodyPoint.Position;
             return true;
+        }
+
+        private bool MeetsCombatThreshold(float attackerMass, float defenderMass)
+        {
+            var threshold = defenderMass * _config.CombatMassRatio;
+            var tolerance = Math.Max(1f, Math.Abs(threshold)) * CombatThresholdRelativeTolerance;
+            return attackerMass >= threshold - tolerance;
         }
 
         private void RebuildFoodIndex()
