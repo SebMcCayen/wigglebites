@@ -12,13 +12,32 @@ namespace Wigglebites.Editor
     public static class AndroidBuild
     {
         private const string DefaultApkPath = "Builds/Android/Wigglebites.apk";
+        private const string DefaultEmulatorApkPath = "Builds/Android/Wigglebites-emulator.apk";
         private const string DefaultBundlePath = "Builds/Android/Wigglebites.aab";
 
         [MenuItem("Wigglebites/Build Android/Development APK")]
-        public static void BuildDevelopmentApk() => Build(development: true, appBundle: false, requireReleaseSigning: false);
+        public static void BuildDevelopmentApk() => Build(
+            development: true,
+            appBundle: false,
+            requireReleaseSigning: false,
+            architecture: AndroidArchitecture.ARM64,
+            defaultOutputPath: DefaultApkPath);
 
         [MenuItem("Wigglebites/Build Android/Validation APK")]
-        public static void BuildValidation() => Build(development: false, appBundle: false, requireReleaseSigning: false);
+        public static void BuildValidation() => Build(
+            development: false,
+            appBundle: false,
+            requireReleaseSigning: false,
+            architecture: AndroidArchitecture.ARM64,
+            defaultOutputPath: DefaultApkPath);
+
+        [MenuItem("Wigglebites/Build Android/Emulator APK")]
+        public static void BuildEmulatorApk() => Build(
+            development: true,
+            appBundle: false,
+            requireReleaseSigning: false,
+            architecture: AndroidArchitecture.X86_64,
+            defaultOutputPath: DefaultEmulatorApkPath);
 
         [MenuItem("Wigglebites/Build Android/Release")]
         public static void BuildRelease()
@@ -30,7 +49,11 @@ namespace Wigglebites.Editor
                 Build(
                     development: false,
                     appBundle: string.Equals(Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_AAB"), "1", StringComparison.Ordinal),
-                    requireReleaseSigning: true);
+                    requireReleaseSigning: true,
+                    architecture: AndroidArchitecture.ARM64,
+                    defaultOutputPath: string.Equals(Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_AAB"), "1", StringComparison.Ordinal)
+                        ? DefaultBundlePath
+                        : DefaultApkPath);
             }
             finally
             {
@@ -38,7 +61,12 @@ namespace Wigglebites.Editor
             }
         }
 
-        private static void Build(bool development, bool appBundle, bool requireReleaseSigning)
+        private static void Build(
+            bool development,
+            bool appBundle,
+            bool requireReleaseSigning,
+            AndroidArchitecture architecture,
+            string defaultOutputPath)
         {
             ValidateRenderPipeline();
             if (requireReleaseSigning) ValidateReleaseSigning();
@@ -54,35 +82,47 @@ namespace Wigglebites.Editor
 
             var configuredPath = Environment.GetEnvironmentVariable("WIGGLEBITES_BUILD_PATH");
             var relativePath = string.IsNullOrWhiteSpace(configuredPath)
-                ? appBundle ? DefaultBundlePath : DefaultApkPath
+                ? defaultOutputPath
                 : configuredPath;
             var outputPath = ResolveProjectOutputPath(relativePath, appBundle ? ".aab" : ".apk");
             Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? throw new InvalidOperationException("Build output has no directory."));
 
-            EditorUserBuildSettings.buildAppBundle = appBundle;
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-            if (!EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android))
+            var previousBuildAppBundle = EditorUserBuildSettings.buildAppBundle;
+            var previousScriptingBackend = PlayerSettings.GetScriptingBackend(BuildTargetGroup.Android);
+            var previousArchitectures = PlayerSettings.Android.targetArchitectures;
+            try
             {
-                throw new InvalidOperationException("Could not activate the Android build target. Install Unity Android Build Support.");
-            }
+                EditorUserBuildSettings.buildAppBundle = appBundle;
+                PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+                PlayerSettings.Android.targetArchitectures = architecture;
+                if (!EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android))
+                {
+                    throw new InvalidOperationException("Could not activate the Android build target. Install Unity Android Build Support.");
+                }
 
-            var options = BuildOptions.StrictMode;
-            if (development) options |= BuildOptions.Development | BuildOptions.AllowDebugging;
-            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
-            {
-                scenes = scenes,
-                locationPathName = outputPath,
-                target = BuildTarget.Android,
-                targetGroup = BuildTargetGroup.Android,
-                options = options
-            });
-            if (report.summary.result != BuildResult.Succeeded)
-            {
-                throw new InvalidOperationException($"Android build failed: {report.summary.result} with {report.summary.totalErrors} errors.");
-            }
+                var options = BuildOptions.StrictMode;
+                if (development) options |= BuildOptions.Development | BuildOptions.AllowDebugging;
+                var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+                {
+                    scenes = scenes,
+                    locationPathName = outputPath,
+                    target = BuildTarget.Android,
+                    targetGroup = BuildTargetGroup.Android,
+                    options = options
+                });
+                if (report.summary.result != BuildResult.Succeeded)
+                {
+                    throw new InvalidOperationException($"Android build failed: {report.summary.result} with {report.summary.totalErrors} errors.");
+                }
 
-            Debug.Log($"Android build succeeded: {outputPath} ({report.summary.totalSize} bytes, {report.summary.totalTime}).");
+                Debug.Log($"Android build succeeded: {outputPath} ({report.summary.totalSize} bytes, {report.summary.totalTime}).");
+            }
+            finally
+            {
+                EditorUserBuildSettings.buildAppBundle = previousBuildAppBundle;
+                PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, previousScriptingBackend);
+                PlayerSettings.Android.targetArchitectures = previousArchitectures;
+            }
         }
 
         private static void ValidateRenderPipeline()
