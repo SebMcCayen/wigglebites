@@ -37,4 +37,4 @@ Declare the device model, Android version, chipset, RAM, display resolution/dens
 
 Unity `6000.0.23f1`, its Android tooling and an active Unity Personal entitlement were verified on the current host on 2026-10-22. A validation build completed successfully and produced an ARM64 APK for `com.wigglebites.snakearena` targeting Android 15 / API 35 with a minimum of API 26. The generated manifest requests no Android permissions.
 
-The automated local gate currently passes all 28 EditMode tests and produces the validation APK successfully. The generated APK is local evidence only, uses non-release signing and has not completed the device acceptance checklist. Do not label the commit as a release candidate until the checklist above passes with the intended release artifact.
+The automated local gate currently passes all 29 EditMode tests and produces the validation APK successfully. The generated APK is local evidence only, uses non-release signing and has not completed the device acceptance checklist. Do not label the commit as a release candidate until the checklist above passes with the intended release artifact.
