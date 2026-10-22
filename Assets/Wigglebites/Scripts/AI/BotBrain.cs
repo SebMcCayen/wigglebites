@@ -129,8 +129,10 @@ namespace Wigglebites.AI
             SnakeState candidate,
             float combatMassRatio)
         {
-            if (personality == BotPersonality.Hunter) return self.Mass >= candidate.Mass * combatMassRatio;
-            if (personality == BotPersonality.Survivor) return candidate.Mass >= self.Mass * combatMassRatio;
+            if (personality == BotPersonality.Hunter)
+                return GameSimulation.MeetsCombatThreshold(self.Mass, candidate.Mass, combatMassRatio);
+            if (personality == BotPersonality.Survivor)
+                return GameSimulation.MeetsCombatThreshold(candidate.Mass, self.Mass, combatMassRatio);
             return true;
         }
 

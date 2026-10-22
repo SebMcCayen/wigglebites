@@ -236,7 +236,7 @@ namespace Wigglebites.Simulation
                             left,
                             right,
                             rightContact,
-                            left.Mass >= right.Mass * _config.CombatMassRatio));
+                            MeetsCombatThreshold(left.Mass, right.Mass, _config.CombatMassRatio)));
                     }
 
                     if (rightTouchesLeft)
@@ -245,7 +245,7 @@ namespace Wigglebites.Simulation
                             right,
                             left,
                             leftContact,
-                            right.Mass >= left.Mass * _config.CombatMassRatio));
+                            MeetsCombatThreshold(right.Mass, left.Mass, _config.CombatMassRatio)));
                     }
                 }
             }
@@ -293,6 +293,13 @@ namespace Wigglebites.Simulation
             if (!_contactPoints.TryGetValue(new ContactKey(attacker.Id, defender.Id), out var bodyPoint)) return false;
             contactPoint = bodyPoint.Position;
             return true;
+        }
+
+        internal static bool MeetsCombatThreshold(float attackerMass, float defenderMass, float combatMassRatio)
+        {
+            var thresholdBits = BitConverter.SingleToInt32Bits(defenderMass * combatMassRatio);
+            var threshold = BitConverter.Int32BitsToSingle(thresholdBits);
+            return attackerMass >= threshold;
         }
 
         private void RebuildFoodIndex()

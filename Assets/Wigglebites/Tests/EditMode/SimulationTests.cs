@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using Wigglebites.Simulation;
 
@@ -125,6 +126,33 @@ namespace Wigglebites.Tests
             Assert.That(right.IsAlive, Is.True);
             Assert.That(left.CollisionCooldownRemaining, Is.GreaterThan(0f));
             Assert.That(right.CollisionCooldownRemaining, Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void Tick_DoesNotEliminateDefenderOneRepresentableMassBelowThreshold()
+        {
+            var simulation = new GameSimulation(CreateConfig());
+            var massImmediatelyBelowThreshold = BitConverter.Int32BitsToSingle(
+                BitConverter.SingleToInt32Bits(11f) - 1);
+            var attacker = simulation.AddSnake(
+                1,
+                true,
+                SimVector2.Zero,
+                SimVector2.Right,
+                startingMass: massImmediatelyBelowThreshold);
+            var defender = simulation.AddSnake(
+                2,
+                false,
+                SimVector2.Zero,
+                new SimVector2(-1f, 0f),
+                startingMass: 10f);
+
+            simulation.Tick(0.01f);
+
+            Assert.That(attacker.IsAlive, Is.True);
+            Assert.That(defender.IsAlive, Is.True);
+            Assert.That(attacker.CollisionCooldownRemaining, Is.GreaterThan(0f));
+            Assert.That(defender.CollisionCooldownRemaining, Is.GreaterThan(0f));
         }
 
         [Test]
