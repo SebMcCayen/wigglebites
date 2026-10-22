@@ -35,4 +35,6 @@ Declare the device model, Android version, chipset, RAM, display resolution/dens
 
 ## Current validation status
 
-The repository-side static gates and Unity version-matching regression test pass. Unity and the Android tooling are installed on the current host, but Unity is not yet licensed, so no Unity build or Android device evidence has been produced. Do not label a commit as a release candidate until the automated gate and checklist above are completed after license activation.
+Unity `6000.0.23f1`, its Android tooling and an active Unity Personal entitlement were verified on the current host on 2026-10-22. A validation build completed successfully and produced an ARM64 APK for `com.wigglebites.snakearena` targeting Android 15 / API 35 with a minimum of API 26. The generated manifest requests no Android permissions.
+
+The EditMode suite currently passes 24 of 28 tests. The four failures cover the exact 1.10 combat threshold and its resulting elimination, food-drop and ranking behavior; they must be fixed before the automated gate is green. The generated validation APK is local evidence only, uses non-release signing and has not completed the device acceptance checklist. Do not label the commit as a release candidate until all tests and the checklist above pass with the intended release artifact.

@@ -4,6 +4,8 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace Wigglebites.Editor
 {
@@ -38,6 +40,7 @@ namespace Wigglebites.Editor
 
         private static void Build(bool development, bool appBundle, bool requireReleaseSigning)
         {
+            ValidateRenderPipeline();
             if (requireReleaseSigning) ValidateReleaseSigning();
             var scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled && !string.IsNullOrWhiteSpace(scene.path))
@@ -80,6 +83,15 @@ namespace Wigglebites.Editor
             }
 
             Debug.Log($"Android build succeeded: {outputPath} ({report.summary.totalSize} bytes, {report.summary.totalTime}).");
+        }
+
+        private static void ValidateRenderPipeline()
+        {
+            if (!(GraphicsSettings.defaultRenderPipeline is UniversalRenderPipelineAsset))
+            {
+                throw new InvalidOperationException(
+                    "Android builds require a Universal Render Pipeline asset in Graphics Settings.");
+            }
         }
 
         private static void ValidateReleaseSigning()
