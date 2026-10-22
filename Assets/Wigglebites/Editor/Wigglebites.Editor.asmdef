@@ -1,7 +1,9 @@
 {
   "name": "Wigglebites.Editor",
   "rootNamespace": "Wigglebites.Editor",
-  "references": [],
+  "references": [
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
   "includePlatforms": [
     "Editor"
   ],
