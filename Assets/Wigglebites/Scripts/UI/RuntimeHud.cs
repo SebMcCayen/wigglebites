@@ -11,6 +11,10 @@ namespace Wigglebites.UI
             "STYR\n→", "STYR\n↗", "STYR\n↑", "STYR\n↖",
             "STYR\n←", "STYR\n↙", "STYR\n↓", "STYR\n↘"
         };
+        private const string BoostIdleLabel = "TURBO\nHÅLL";
+        private const string BoostPendingLabel = "TURBO\nSTARTAR";
+        private const string BoostActiveLabel = "TURBO\nAKTIV";
+        private const string BoostUnavailableLabel = "TURBO\nMER MASS";
 
         private ArenaBootstrap _game;
         private GUIStyle _titleStyle;
@@ -130,10 +134,11 @@ namespace Wigglebites.UI
             GUI.color = new Color(0.15f, 0.75f, 1f, 0.72f);
             GUI.Box(layout.Steering, HeadingLabel(_game.DesiredHeading), _controlStyle);
 
-            GUI.color = _game.IsBoostHeld
-                ? new Color(1f, 0.78f, 0.15f, 0.92f)
-                : new Color(1f, 0.45f, 0.2f, 0.72f);
-            GUI.Box(layout.Boost, _game.IsBoostHeld ? "TURBO\nAKTIV" : "TURBO\nHÅLL", _controlStyle);
+            GUI.color = BoostColor(_game.IsBoostHeld, _game.IsPlayerBoosting, _game.CanPlayerBoost);
+            GUI.Box(
+                layout.Boost,
+                BoostLabel(_game.IsBoostHeld, _game.IsPlayerBoosting, _game.CanPlayerBoost),
+                _controlStyle);
 
             GUI.color = oldColor;
         }
@@ -153,6 +158,22 @@ namespace Wigglebites.UI
             var angle = Mathf.Atan2(heading.Y, heading.X) * Mathf.Rad2Deg;
             if (angle < 0f) angle += 360f;
             return Mathf.RoundToInt(angle / 45f) % 8;
+        }
+
+        public static string BoostLabel(bool held, bool boosting, bool canBoost)
+        {
+            if (boosting) return BoostActiveLabel;
+            if (!held) return BoostIdleLabel;
+            return canBoost ? BoostPendingLabel : BoostUnavailableLabel;
+        }
+
+        private static Color BoostColor(bool held, bool boosting, bool canBoost)
+        {
+            if (boosting) return new Color(1f, 0.78f, 0.15f, 0.92f);
+            if (held && !canBoost) return new Color(0.58f, 0.6f, 0.65f, 0.76f);
+            return held
+                ? new Color(1f, 0.62f, 0.18f, 0.82f)
+                : new Color(1f, 0.45f, 0.2f, 0.72f);
         }
 
         private void DrawMenu(float width, float height, float touchHeight)

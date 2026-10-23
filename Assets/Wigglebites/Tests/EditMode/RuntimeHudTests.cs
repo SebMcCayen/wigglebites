@@ -53,5 +53,18 @@ namespace Wigglebites.Tests
         {
             Assert.That(RuntimeHud.HeadingArrow(new SimVector2(x, y)), Is.EqualTo(expected));
         }
+
+        [TestCase(false, false, false, "TURBO\nHÅLL")]
+        [TestCase(true, false, true, "TURBO\nSTARTAR")]
+        [TestCase(true, true, true, "TURBO\nAKTIV")]
+        [TestCase(true, false, false, "TURBO\nMER MASS")]
+        public void BoostLabel_ReportsSimulationState(
+            bool held,
+            bool boosting,
+            bool canBoost,
+            string expected)
+        {
+            Assert.That(RuntimeHud.BoostLabel(held, boosting, canBoost), Is.EqualTo(expected));
+        }
     }
 }
