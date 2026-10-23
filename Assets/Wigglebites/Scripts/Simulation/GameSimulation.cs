@@ -11,6 +11,7 @@ namespace Wigglebites.Simulation
         private readonly List<CombatContact> _combatContacts = new List<CombatContact>();
         private readonly HashSet<int> _pendingEliminations = new HashSet<int>();
         private readonly Dictionary<int, int> _eliminators = new Dictionary<int, int>();
+        private readonly Dictionary<int, TailSeverAction> _pendingTailSevers = new Dictionary<int, TailSeverAction>();
         private readonly SpatialHash2D<FoodState> _foodIndex;
         private readonly SpatialHash2D<BodyPoint> _bodyIndex;
         private readonly List<FoodState> _nearbyFood = new List<FoodState>();
@@ -215,6 +216,7 @@ namespace Wigglebites.Simulation
             _combatContacts.Clear();
             _pendingEliminations.Clear();
             _eliminators.Clear();
+            _pendingTailSevers.Clear();
             BuildContactLookup();
 
             for (var leftIndex = 0; leftIndex < _snakes.Count; leftIndex++)
@@ -253,7 +255,9 @@ namespace Wigglebites.Simulation
             for (var index = 0; index < _combatContacts.Count; index++)
             {
                 var contact = _combatContacts[index];
-                if (contact.AttackerQualifies)
+                if (!contact.AttackerQualifies) continue;
+
+                if (contact.ContactPoint.SegmentIndex == 0)
                 {
                     _pendingEliminations.Add(contact.Defender.Id);
                     if (!_eliminators.TryGetValue(contact.Defender.Id, out var currentAttackerId) ||
@@ -261,6 +265,18 @@ namespace Wigglebites.Simulation
                     {
                         _eliminators[contact.Defender.Id] = contact.Attacker.Id;
                     }
+                    continue;
+                }
+
+                var candidate = new TailSeverAction(
+                    contact.Attacker.Id,
+                    contact.ContactPoint.SegmentIndex,
+                    contact.ContactPoint.Position);
+                if (!_pendingTailSevers.TryGetValue(contact.Defender.Id, out var currentSever) ||
+                    candidate.SegmentIndex < currentSever.SegmentIndex ||
+                    (candidate.SegmentIndex == currentSever.SegmentIndex && candidate.AttackerId < currentSever.AttackerId))
+                {
+                    _pendingTailSevers[contact.Defender.Id] = candidate;
                 }
             }
 
@@ -269,7 +285,7 @@ namespace Wigglebites.Simulation
                 var contact = _combatContacts[index];
                 if (contact.AttackerQualifies) continue;
                 contact.Attacker.ApplyDeflection(
-                    contact.Attacker.Position - contact.ContactPoint,
+                    contact.Attacker.Position - contact.ContactPoint.Position,
                     _config.CollisionCooldownSeconds);
             }
 
@@ -285,13 +301,27 @@ namespace Wigglebites.Simulation
                 snake.Eliminate();
                 SpawnEliminationFood(snake);
             }
+
+            for (var index = 0; index < _snakes.Count; index++)
+            {
+                var snake = _snakes[index];
+                if (!snake.IsAlive || _pendingEliminations.Contains(snake.Id)) continue;
+                if (!_pendingTailSevers.TryGetValue(snake.Id, out var sever)) continue;
+
+                SpawnSeveredTailFood(snake, sever.SegmentIndex);
+                snake.ApplyCollisionCooldown(_config.CollisionCooldownSeconds);
+                var attacker = FindSnake(sever.AttackerId);
+                attacker?.ApplyDeflection(
+                    attacker.Position - sever.ContactPosition,
+                    _config.CollisionCooldownSeconds);
+            }
         }
 
-        private bool TryGetContactPoint(SnakeState attacker, SnakeState defender, out SimVector2 contactPoint)
+        private bool TryGetContactPoint(SnakeState attacker, SnakeState defender, out BodyPoint contactPoint)
         {
-            contactPoint = defender.Position;
+            contactPoint = new BodyPoint(defender, 0, defender.Position);
             if (!_contactPoints.TryGetValue(new ContactKey(attacker.Id, defender.Id), out var bodyPoint)) return false;
-            contactPoint = bodyPoint.Position;
+            contactPoint = bodyPoint;
             return true;
         }
 
@@ -347,7 +377,17 @@ namespace Wigglebites.Simulation
                     if ((attacker.Position - point.Position).SqrMagnitude > contactDistance * contactDistance) continue;
 
                     var key = new ContactKey(attacker.Id, point.Snake.Id);
-                    if (!_contactPoints.TryGetValue(key, out var current) || point.SegmentIndex < current.SegmentIndex)
+                    var pointDistanceSquared = (attacker.Position - point.Position).SqrMagnitude;
+                    if (!_contactPoints.TryGetValue(key, out var current))
+                    {
+                        _contactPoints[key] = point;
+                        continue;
+                    }
+
+                    var currentDistanceSquared = (attacker.Position - current.Position).SqrMagnitude;
+                    if (pointDistanceSquared < currentDistanceSquared - 0.00001f ||
+                        (Math.Abs(pointDistanceSquared - currentDistanceSquared) <= 0.00001f &&
+                         point.SegmentIndex < current.SegmentIndex))
                     {
                         _contactPoints[key] = point;
                     }
@@ -377,6 +417,29 @@ namespace Wigglebites.Simulation
             }
         }
 
+        private void SpawnSeveredTailFood(SnakeState snake, int firstRemovedSegment)
+        {
+            var previousSegmentCount = snake.BodySegmentCount;
+            if (firstRemovedSegment <= 0 || firstRemovedSegment >= previousSegmentCount) return;
+
+            var droppedPositions = new SimVector2[previousSegmentCount - firstRemovedSegment];
+            for (var index = 0; index < droppedPositions.Length; index++)
+            {
+                droppedPositions[index] = snake.GetBodyPosition(firstRemovedSegment + index);
+            }
+
+            var droppedMass = snake.SeverTailAtSegment(firstRemovedSegment);
+            if (droppedMass <= 0f || droppedPositions.Length == 0) return;
+
+            var candyMass = droppedMass / droppedPositions.Length;
+            for (var index = 0; index < droppedPositions.Length; index++)
+            {
+                var angle = (snake.Id * 0.73f) + (index * 2.3999632f);
+                var offset = new SimVector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * 0.12f;
+                if (!TrySpawnFood(droppedPositions[index] + offset, candyMass)) break;
+            }
+        }
+
         private bool TrySpawnFood(SimVector2 position, float massValue)
         {
             for (var index = 0; index < _food.Count; index++)
@@ -396,7 +459,7 @@ namespace Wigglebites.Simulation
             public CombatContact(
                 SnakeState attacker,
                 SnakeState defender,
-                SimVector2 contactPoint,
+                BodyPoint contactPoint,
                 bool attackerQualifies)
             {
                 Attacker = attacker;
@@ -407,8 +470,22 @@ namespace Wigglebites.Simulation
 
             public SnakeState Attacker { get; }
             public SnakeState Defender { get; }
-            public SimVector2 ContactPoint { get; }
+            public BodyPoint ContactPoint { get; }
             public bool AttackerQualifies { get; }
+        }
+
+        private readonly struct TailSeverAction
+        {
+            public TailSeverAction(int attackerId, int segmentIndex, SimVector2 contactPosition)
+            {
+                AttackerId = attackerId;
+                SegmentIndex = segmentIndex;
+                ContactPosition = contactPosition;
+            }
+
+            public int AttackerId { get; }
+            public int SegmentIndex { get; }
+            public SimVector2 ContactPosition { get; }
         }
 
         private readonly struct BodyPoint

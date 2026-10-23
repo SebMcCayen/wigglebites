@@ -51,8 +51,10 @@ A playful premium mobile arcade aesthetic: rounded glossy snake bodies, huge fri
 - Create original production assets and materials from the references.
 
 ## Current runtime implementation
-- Deep navy floor with an optional cyan emissive grid, luminous arena walls and corner pylons.
-- Cyan player plus orange, lime, violet and ice-blue bot palettes; cyan, pink, gold and lime food.
+- Layered navy/slate hex floor, luminous two-level arena walls, edge crystal clusters, rounded rock gardens and foliage.
+- Cyan player plus orange, lime, violet and ice-blue bot palettes with alternating body patterns, tapered tails, glossy materials and expressive modeled faces with large eyes, pupils, smiles, tongues and cheeks.
+- Cyan, pink, gold and lime candy uses varied rounded silhouettes, bobbing and rotation. Severed tails reuse the same candy language so the new combat rule is immediately readable.
 - Food bobbing/rotation, pickup/elimination/results particle bursts and short generated feedback tones.
-- Reduced-effects mode removes decorative grid/pylons, food motion and particles while retaining gameplay readability; sound is independently switchable.
-- Swedish-first HUD labels are kept in the presentation layer so a future localization table can replace them without touching simulation code.
+- The camera eases outward as player mass grows while retaining the angled portrait view.
+- Reduced-effects mode hides decorative edge props, food motion and particles while retaining the readable hex floor, arena boundary and gameplay silhouettes; sound is independently switchable.
+- Swedish-first HUD labels, colorful rounded panels, a dominant gold play button and distinct cyan/violet settings buttons are kept in the presentation layer so a future localization table can replace them without touching simulation code.

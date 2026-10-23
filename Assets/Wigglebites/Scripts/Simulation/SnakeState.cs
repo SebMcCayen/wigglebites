@@ -10,6 +10,7 @@ namespace Wigglebites.Simulation
         private readonly int _baseBodySegments;
         private SimVector2 _desiredHeading;
         private bool _boostRequested;
+        private int _severedSegmentPenalty;
 
         public SnakeState(
             int id,
@@ -72,7 +73,9 @@ namespace Wigglebites.Simulation
         public float SpawnGraceRemaining { get; private set; }
         public bool IsCombatProtected => SpawnGraceRemaining > 0f;
         public int Eliminations { get; private set; }
-        public int BodySegmentCount => _baseBodySegments + Math.Max(0, (int)(Mass / 10f));
+        public int BodySegmentCount => Math.Max(
+            1,
+            _baseBodySegments + Math.Max(0, (int)(Mass / 10f)) - _severedSegmentPenalty);
 
         public void SetDesiredHeading(SimVector2 heading)
         {
@@ -150,6 +153,26 @@ namespace Wigglebites.Simulation
             _boostRequested = false;
         }
 
+        internal float SeverTailAtSegment(int firstRemovedSegment)
+        {
+            if (!IsAlive) return 0f;
+
+            var currentSegmentCount = BodySegmentCount;
+            if (firstRemovedSegment <= 0 || firstRemovedSegment >= currentSegmentCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(firstRemovedSegment));
+            }
+
+            var retainedFraction = firstRemovedSegment / (float)currentSegmentCount;
+            var previousMass = Mass;
+            Mass = Math.Max(0.1f, previousMass * retainedFraction);
+
+            var naturalSegmentCount = _baseBodySegments + Math.Max(0, (int)(Mass / 10f));
+            _severedSegmentPenalty = Math.Max(0, naturalSegmentCount - firstRemovedSegment);
+            CollisionCooldownRemaining = Math.Max(CollisionCooldownRemaining, 0.01f);
+            return previousMass - Mass;
+        }
+
         internal void RecordElimination()
         {
             Eliminations++;
@@ -170,6 +193,7 @@ namespace Wigglebites.Simulation
             _boostRequested = false;
             CollisionCooldownRemaining = 0f;
             SpawnGraceRemaining = graceSeconds;
+            _severedSegmentPenalty = 0;
             _path.Clear();
             for (var index = 0; index < BodySegmentCount; index++)
             {
@@ -186,6 +210,12 @@ namespace Wigglebites.Simulation
                 : new SimVector2(-Heading.X, -Heading.Y);
             Heading = direction;
             _desiredHeading = direction;
+            CollisionCooldownRemaining = Math.Max(CollisionCooldownRemaining, cooldownSeconds);
+        }
+
+        internal void ApplyCollisionCooldown(float cooldownSeconds)
+        {
+            if (!IsAlive) return;
             CollisionCooldownRemaining = Math.Max(CollisionCooldownRemaining, cooldownSeconds);
         }
 

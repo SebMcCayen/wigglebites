@@ -3,6 +3,8 @@
 ## Pitch
 A playful, fast, offline Android portrait-mode arena game for children. Steer a cute snake, collect glowing food, grow larger, and eat smaller rival snakes. Finish the 180-second round with the greatest mass.
 
+Combat stays playful and readable: biting a rival's body cuts the touched section and tail into candy while its head-side section escapes. A snake is only eliminated when an eligible rival reaches its head.
+
 ## Session
 - One human-controlled snake and 19 locally simulated AI opponents.
 - Fixed 180-second round. At time expiry, highest mass wins; ties resolved by eliminations, then deterministic stable snake ID.

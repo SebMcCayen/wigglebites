@@ -114,6 +114,78 @@ namespace Wigglebites.Tests
         }
 
         [Test]
+        public void Tick_BodyBiteSeversTailIntoCandyWithoutEliminatingDefender()
+        {
+            var simulation = new GameSimulation(CreateConfig());
+            var defender = simulation.AddSnake(
+                2,
+                false,
+                SimVector2.Zero,
+                SimVector2.Right,
+                startingMass: 20f);
+            const int firstRemovedSegment = 5;
+            var contactPosition = defender.GetBodyPosition(firstRemovedSegment);
+            var attacker = simulation.AddSnake(
+                1,
+                true,
+                contactPosition,
+                SimVector2.Right,
+                startingMass: 22f);
+            var originalSegmentCount = defender.BodySegmentCount;
+
+            simulation.Tick(0.01f);
+
+            Assert.That(attacker.IsAlive, Is.True);
+            Assert.That(defender.IsAlive, Is.True, "A body bite must not eliminate the surviving head.");
+            Assert.That(defender.BodySegmentCount, Is.EqualTo(firstRemovedSegment));
+            Assert.That(defender.Mass, Is.EqualTo(20f * firstRemovedSegment / originalSegmentCount).Within(0.0001f));
+            Assert.That(simulation.Food.Count, Is.EqualTo(originalSegmentCount - firstRemovedSegment));
+            Assert.That(attacker.CollisionCooldownRemaining, Is.GreaterThan(0f));
+
+            var droppedMass = 0f;
+            for (var index = 0; index < simulation.Food.Count; index++)
+            {
+                droppedMass += simulation.Food[index].MassValue;
+            }
+            Assert.That(droppedMass, Is.EqualTo(20f - defender.Mass).Within(0.0001f));
+        }
+
+        [Test]
+        public void Tick_HeadBiteStillEliminatesAfterEarlierTailLoss()
+        {
+            var simulation = new GameSimulation(CreateConfig());
+            var defender = simulation.AddSnake(
+                2,
+                false,
+                SimVector2.Zero,
+                SimVector2.Right,
+                startingMass: 20f);
+            var tailAttacker = simulation.AddSnake(
+                1,
+                true,
+                defender.GetBodyPosition(5),
+                SimVector2.Right,
+                startingMass: 22f);
+
+            simulation.Tick(0.01f);
+            Assert.That(defender.IsAlive, Is.True);
+
+            var headAttacker = simulation.AddSnake(
+                3,
+                false,
+                defender.Position,
+                defender.Heading,
+                startingMass: defender.Mass * 1.1f);
+
+            simulation.Tick(0.01f);
+
+            Assert.That(tailAttacker.IsAlive, Is.True);
+            Assert.That(headAttacker.IsAlive, Is.True);
+            Assert.That(defender.IsAlive, Is.False);
+            Assert.That(headAttacker.Eliminations, Is.EqualTo(1));
+        }
+
+        [Test]
         public void Tick_DeflectsBothSnakesWhenNeitherMeetsCombatThreshold()
         {
             var simulation = new GameSimulation(CreateConfig());

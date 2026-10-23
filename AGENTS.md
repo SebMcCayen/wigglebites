@@ -6,7 +6,7 @@ This file and `docs/` describe the NEW approved direction. The former Kotlin/mul
 ## Approved decisions
 - Android portrait game built in Unity 6, C#, 2.5D top-down perspective.
 - Offline-only MVP: 1 human + 19 local AI snakes, 180-second matches.
-- Size/mass-based combat: attacker must have >= 1.10x defender mass; head touching another snake's head/body triggers elimination when eligible.
+- Size/mass-based combat: attacker must have >= 1.10x defender mass; a qualifying head bite eliminates, while a qualifying body bite severs that segment and the tail into candy so the head-side survivor keeps moving.
 - Friendly Neon Arena visual direction, bright glowing food, crystals, rocks, foliage, colorful snakes and VFX.
 - No server, Firebase, WebSockets, multiplayer, ads, store, or real-money purchases in MVP.
 - No Kotlin/Jetpack Compose app architecture for this version.

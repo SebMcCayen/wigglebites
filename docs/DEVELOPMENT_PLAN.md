@@ -10,7 +10,7 @@
 ## Definition of done
 - Start match from menu quickly (target <=5s after menu appears on reference device).
 - 1 player + 19 bots + 350 food objects work without noticeable hitching.
-- All combat obeys mass threshold; no inconsistent double eliminations.
+- All combat obeys the mass threshold; body bites sever only the touched tail section, head bites eliminate, and simultaneous contacts remain deterministic.
 - Offline play, pause/resume, safe areas and touch controls work.
 - Best mass and settings persist across app restarts.
 - Stable 60 FPS target on a declared Android reference device; actual measured FPS documented.
