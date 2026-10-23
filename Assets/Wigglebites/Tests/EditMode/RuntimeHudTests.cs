@@ -15,6 +15,8 @@ namespace Wigglebites.Tests
             Assert.That(layout.Boost.xMax, Is.LessThanOrEqualTo(1080f));
             Assert.That(layout.Steering.yMax, Is.LessThanOrEqualTo(1920f));
             Assert.That(layout.Boost.xMin, Is.GreaterThan(layout.Steering.xMax));
+            Assert.That(layout.Steering.xMax, Is.LessThanOrEqualTo(1080f * 0.6f));
+            Assert.That(layout.Boost.xMin, Is.GreaterThanOrEqualTo(1080f * 0.6f));
             Assert.That(layout.Steering.width, Is.GreaterThanOrEqualTo(82f));
             Assert.That(layout.Boost.height, Is.EqualTo(layout.Steering.height));
         }
@@ -27,7 +29,19 @@ namespace Wigglebites.Tests
             Assert.That(layout.Steering.xMin, Is.GreaterThanOrEqualTo(0f));
             Assert.That(layout.Boost.xMax, Is.LessThanOrEqualTo(320f));
             Assert.That(layout.Boost.xMin, Is.GreaterThanOrEqualTo(layout.Steering.xMax));
+            Assert.That(layout.Steering.xMax, Is.LessThanOrEqualTo(320f * 0.6f));
+            Assert.That(layout.Boost.xMin, Is.GreaterThanOrEqualTo(320f * 0.6f));
             Assert.That(layout.Steering.width, Is.GreaterThanOrEqualTo(58f));
+        }
+
+        [Test]
+        public void TouchControls_AreClampedInsideShortSafeArea()
+        {
+            var layout = RuntimeHud.CalculateTouchControlLayout(320f, 100f, 58f);
+
+            Assert.That(layout.Steering.yMin, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(layout.Steering.yMax, Is.LessThanOrEqualTo(100f));
+            Assert.That(layout.Boost.yMax, Is.LessThanOrEqualTo(100f));
         }
 
         [TestCase(1f, 0f, "→")]

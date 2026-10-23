@@ -6,6 +6,11 @@ namespace Wigglebites.UI
     public sealed class RuntimeHud : MonoBehaviour
     {
         private static readonly string[] HeadingArrows = { "→", "↗", "↑", "↖", "←", "↙", "↓", "↘" };
+        private static readonly string[] HeadingLabels =
+        {
+            "STYR\n→", "STYR\n↗", "STYR\n↑", "STYR\n↖",
+            "STYR\n←", "STYR\n↙", "STYR\n↓", "STYR\n↘"
+        };
 
         private ArenaBootstrap _game;
         private GUIStyle _titleStyle;
@@ -68,7 +73,11 @@ namespace Wigglebites.UI
             const float bottomMargin = 26f;
             const float gap = 30f;
             var availableWidth = Mathf.Max(touchHeight, (width - (horizontalMargin * 2f) - gap) * 0.5f);
-            var size = Mathf.Min(Mathf.Max(150f, touchHeight * 1.65f), Mathf.Min(230f, availableWidth));
+            var rightTouchZoneWidth = Mathf.Max(touchHeight, (width * 0.4f) - horizontalMargin);
+            var size = Mathf.Min(
+                Mathf.Max(150f, touchHeight * 1.65f),
+                Mathf.Min(230f, Mathf.Min(availableWidth, rightTouchZoneWidth)));
+            size = Mathf.Min(size, Mathf.Max(0f, height - bottomMargin));
             var top = Mathf.Max(0f, height - size - bottomMargin);
             return new TouchControlLayout(
                 new Rect(horizontalMargin, top, size, size),
@@ -119,7 +128,7 @@ namespace Wigglebites.UI
             var oldColor = GUI.color;
 
             GUI.color = new Color(0.15f, 0.75f, 1f, 0.72f);
-            GUI.Box(layout.Steering, $"STYR\n{HeadingArrow(_game.DesiredHeading)}", _controlStyle);
+            GUI.Box(layout.Steering, HeadingLabel(_game.DesiredHeading), _controlStyle);
 
             GUI.color = _game.IsBoostHeld
                 ? new Color(1f, 0.78f, 0.15f, 0.92f)
@@ -131,10 +140,19 @@ namespace Wigglebites.UI
 
         public static string HeadingArrow(Wigglebites.Simulation.SimVector2 heading)
         {
+            return HeadingArrows[HeadingDirection(heading)];
+        }
+
+        private static string HeadingLabel(Wigglebites.Simulation.SimVector2 heading)
+        {
+            return HeadingLabels[HeadingDirection(heading)];
+        }
+
+        private static int HeadingDirection(Wigglebites.Simulation.SimVector2 heading)
+        {
             var angle = Mathf.Atan2(heading.Y, heading.X) * Mathf.Rad2Deg;
             if (angle < 0f) angle += 360f;
-            var direction = Mathf.RoundToInt(angle / 45f) % 8;
-            return HeadingArrows[direction];
+            return Mathf.RoundToInt(angle / 45f) % 8;
         }
 
         private void DrawMenu(float width, float height, float touchHeight)
