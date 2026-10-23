@@ -34,6 +34,10 @@ namespace Wigglebites
         public float BestMass => _saveData?.bestMass ?? 0f;
         public bool ReducedEffects => _saveData?.reducedEffects ?? false;
         public bool SoundEnabled => _saveData?.soundEnabled ?? true;
+        public SimVector2 DesiredHeading => _input?.DesiredHeading ?? SimVector2.Right;
+        public bool IsBoostHeld => _input?.IsBoostHeld ?? false;
+        public bool IsPlayerBoosting => Player?.IsBoosting ?? false;
+        public bool CanPlayerBoost => Player != null && Player.Mass > Player.MinimumBoostMass;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateRuntime()

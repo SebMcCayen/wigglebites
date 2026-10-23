@@ -5,11 +5,35 @@ namespace Wigglebites.UI
 {
     public sealed class RuntimeHud : MonoBehaviour
     {
+        private static readonly string[] HeadingArrows = { "→", "↗", "↑", "↖", "←", "↙", "↓", "↘" };
+        private static readonly string[] HeadingLabels =
+        {
+            "STYR\n→", "STYR\n↗", "STYR\n↑", "STYR\n↖",
+            "STYR\n←", "STYR\n↙", "STYR\n↓", "STYR\n↘"
+        };
+        private const string BoostIdleLabel = "TURBO\nHÅLL";
+        private const string BoostPendingLabel = "TURBO\nSTARTAR";
+        private const string BoostActiveLabel = "TURBO\nAKTIV";
+        private const string BoostUnavailableLabel = "TURBO\nMER MASS";
+
         private ArenaBootstrap _game;
         private GUIStyle _titleStyle;
         private GUIStyle _labelStyle;
         private GUIStyle _centerStyle;
         private GUIStyle _buttonStyle;
+        private GUIStyle _controlStyle;
+
+        public readonly struct TouchControlLayout
+        {
+            public TouchControlLayout(Rect steering, Rect boost)
+            {
+                Steering = steering;
+                Boost = boost;
+            }
+
+            public Rect Steering { get; }
+            public Rect Boost { get; }
+        }
 
         public void Configure(ArenaBootstrap game)
         {
@@ -47,6 +71,23 @@ namespace Wigglebites.UI
             return dpi > 0f ? Mathf.Max(58f, (56f * dpi / 160f) / canvasScale) : 82f;
         }
 
+        public static TouchControlLayout CalculateTouchControlLayout(float width, float height, float touchHeight)
+        {
+            const float horizontalMargin = 30f;
+            const float bottomMargin = 26f;
+            const float gap = 30f;
+            var availableWidth = Mathf.Max(touchHeight, (width - (horizontalMargin * 2f) - gap) * 0.5f);
+            var rightTouchZoneWidth = Mathf.Max(touchHeight, (width * 0.4f) - horizontalMargin);
+            var size = Mathf.Min(
+                Mathf.Max(150f, touchHeight * 1.65f),
+                Mathf.Min(230f, Mathf.Min(availableWidth, rightTouchZoneWidth)));
+            size = Mathf.Min(size, Mathf.Max(0f, height - bottomMargin));
+            var top = Mathf.Max(0f, height - size - bottomMargin);
+            return new TouchControlLayout(
+                new Rect(horizontalMargin, top, size, size),
+                new Rect(width - horizontalMargin - size, top, size, size));
+        }
+
         private void DrawHud(float width, float height, float touchHeight)
         {
             if (_game.Match.Phase == MatchPhase.Menu) return;
@@ -81,9 +122,58 @@ namespace Wigglebites.UI
 
             if (_game.Match.Phase == MatchPhase.Playing)
             {
-                GUI.Label(new Rect(30f, height - 110f, 280f, 58f), "DRA FÖR ATT STYRA", _centerStyle);
-                GUI.Label(new Rect(width - 310f, height - 110f, 280f, 58f), "HÅLL FÖR TURBO", _centerStyle);
+                DrawTouchControls(width, height, touchHeight);
             }
+        }
+
+        private void DrawTouchControls(float width, float height, float touchHeight)
+        {
+            var layout = CalculateTouchControlLayout(width, height, touchHeight);
+            var oldColor = GUI.color;
+
+            GUI.color = new Color(0.15f, 0.75f, 1f, 0.72f);
+            GUI.Box(layout.Steering, HeadingLabel(_game.DesiredHeading), _controlStyle);
+
+            GUI.color = BoostColor(_game.IsBoostHeld, _game.IsPlayerBoosting, _game.CanPlayerBoost);
+            GUI.Box(
+                layout.Boost,
+                BoostLabel(_game.IsBoostHeld, _game.IsPlayerBoosting, _game.CanPlayerBoost),
+                _controlStyle);
+
+            GUI.color = oldColor;
+        }
+
+        public static string HeadingArrow(Wigglebites.Simulation.SimVector2 heading)
+        {
+            return HeadingArrows[HeadingDirection(heading)];
+        }
+
+        private static string HeadingLabel(Wigglebites.Simulation.SimVector2 heading)
+        {
+            return HeadingLabels[HeadingDirection(heading)];
+        }
+
+        private static int HeadingDirection(Wigglebites.Simulation.SimVector2 heading)
+        {
+            var angle = Mathf.Atan2(heading.Y, heading.X) * Mathf.Rad2Deg;
+            if (angle < 0f) angle += 360f;
+            return Mathf.RoundToInt(angle / 45f) % 8;
+        }
+
+        public static string BoostLabel(bool held, bool boosting, bool canBoost)
+        {
+            if (boosting) return BoostActiveLabel;
+            if (!held) return BoostIdleLabel;
+            return canBoost ? BoostPendingLabel : BoostUnavailableLabel;
+        }
+
+        private static Color BoostColor(bool held, bool boosting, bool canBoost)
+        {
+            if (boosting) return new Color(1f, 0.78f, 0.15f, 0.92f);
+            if (held && !canBoost) return new Color(0.58f, 0.6f, 0.65f, 0.76f);
+            return held
+                ? new Color(1f, 0.62f, 0.18f, 0.82f)
+                : new Color(1f, 0.45f, 0.2f, 0.72f);
         }
 
         private void DrawMenu(float width, float height, float touchHeight)
@@ -169,6 +259,13 @@ namespace Wigglebites.UI
             _labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleLeft, fontSize = 24, fontStyle = FontStyle.Bold };
             _centerStyle = new GUIStyle(_labelStyle) { alignment = TextAnchor.MiddleCenter };
             _buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 28, fontStyle = FontStyle.Bold };
+            _controlStyle = new GUIStyle(GUI.skin.box)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 28,
+                fontStyle = FontStyle.Bold,
+                wordWrap = true
+            };
         }
     }
 }
