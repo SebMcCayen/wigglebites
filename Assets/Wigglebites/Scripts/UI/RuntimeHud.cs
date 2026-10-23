@@ -5,11 +5,26 @@ namespace Wigglebites.UI
 {
     public sealed class RuntimeHud : MonoBehaviour
     {
+        private static readonly string[] HeadingArrows = { "→", "↗", "↑", "↖", "←", "↙", "↓", "↘" };
+
         private ArenaBootstrap _game;
         private GUIStyle _titleStyle;
         private GUIStyle _labelStyle;
         private GUIStyle _centerStyle;
         private GUIStyle _buttonStyle;
+        private GUIStyle _controlStyle;
+
+        public readonly struct TouchControlLayout
+        {
+            public TouchControlLayout(Rect steering, Rect boost)
+            {
+                Steering = steering;
+                Boost = boost;
+            }
+
+            public Rect Steering { get; }
+            public Rect Boost { get; }
+        }
 
         public void Configure(ArenaBootstrap game)
         {
@@ -47,6 +62,19 @@ namespace Wigglebites.UI
             return dpi > 0f ? Mathf.Max(58f, (56f * dpi / 160f) / canvasScale) : 82f;
         }
 
+        public static TouchControlLayout CalculateTouchControlLayout(float width, float height, float touchHeight)
+        {
+            const float horizontalMargin = 30f;
+            const float bottomMargin = 26f;
+            const float gap = 30f;
+            var availableWidth = Mathf.Max(touchHeight, (width - (horizontalMargin * 2f) - gap) * 0.5f);
+            var size = Mathf.Min(Mathf.Max(150f, touchHeight * 1.65f), Mathf.Min(230f, availableWidth));
+            var top = Mathf.Max(0f, height - size - bottomMargin);
+            return new TouchControlLayout(
+                new Rect(horizontalMargin, top, size, size),
+                new Rect(width - horizontalMargin - size, top, size, size));
+        }
+
         private void DrawHud(float width, float height, float touchHeight)
         {
             if (_game.Match.Phase == MatchPhase.Menu) return;
@@ -81,9 +109,32 @@ namespace Wigglebites.UI
 
             if (_game.Match.Phase == MatchPhase.Playing)
             {
-                GUI.Label(new Rect(30f, height - 110f, 280f, 58f), "DRA FÖR ATT STYRA", _centerStyle);
-                GUI.Label(new Rect(width - 310f, height - 110f, 280f, 58f), "HÅLL FÖR TURBO", _centerStyle);
+                DrawTouchControls(width, height, touchHeight);
             }
+        }
+
+        private void DrawTouchControls(float width, float height, float touchHeight)
+        {
+            var layout = CalculateTouchControlLayout(width, height, touchHeight);
+            var oldColor = GUI.color;
+
+            GUI.color = new Color(0.15f, 0.75f, 1f, 0.72f);
+            GUI.Box(layout.Steering, $"STYR\n{HeadingArrow(_game.DesiredHeading)}", _controlStyle);
+
+            GUI.color = _game.IsBoostHeld
+                ? new Color(1f, 0.78f, 0.15f, 0.92f)
+                : new Color(1f, 0.45f, 0.2f, 0.72f);
+            GUI.Box(layout.Boost, _game.IsBoostHeld ? "TURBO\nAKTIV" : "TURBO\nHÅLL", _controlStyle);
+
+            GUI.color = oldColor;
+        }
+
+        public static string HeadingArrow(Wigglebites.Simulation.SimVector2 heading)
+        {
+            var angle = Mathf.Atan2(heading.Y, heading.X) * Mathf.Rad2Deg;
+            if (angle < 0f) angle += 360f;
+            var direction = Mathf.RoundToInt(angle / 45f) % 8;
+            return HeadingArrows[direction];
         }
 
         private void DrawMenu(float width, float height, float touchHeight)
@@ -169,6 +220,13 @@ namespace Wigglebites.UI
             _labelStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleLeft, fontSize = 24, fontStyle = FontStyle.Bold };
             _centerStyle = new GUIStyle(_labelStyle) { alignment = TextAnchor.MiddleCenter };
             _buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 28, fontStyle = FontStyle.Bold };
+            _controlStyle = new GUIStyle(GUI.skin.box)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 28,
+                fontStyle = FontStyle.Bold,
+                wordWrap = true
+            };
         }
     }
 }
