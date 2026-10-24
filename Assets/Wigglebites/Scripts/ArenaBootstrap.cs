@@ -77,7 +77,7 @@ namespace Wigglebites
             BuildSimulation();
             _match = new MatchController(_simulation, PlayerSnakeId, _balance.MatchDurationSeconds);
             _view.Render(_simulation);
-            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
+            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId), Player.Mass);
 
             var hud = gameObject.AddComponent<RuntimeHud>();
             hud.Configure(this);
@@ -119,7 +119,7 @@ namespace Wigglebites
             if (_match.Phase == MatchPhase.Results) PersistResult();
 
             _view.Render(_simulation);
-            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
+            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId), Player.Mass);
         }
 
         public void StartMatch()
@@ -149,7 +149,7 @@ namespace Wigglebites
             _match = new MatchController(_simulation, PlayerSnakeId, _balance.MatchDurationSeconds);
             _match.Start();
             _view.Render(_simulation);
-            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId));
+            _followCamera.SetTarget(_view.GetSnakeHeadPosition(PlayerSnakeId), Player.Mass);
         }
 
         public void ToggleReducedEffects()

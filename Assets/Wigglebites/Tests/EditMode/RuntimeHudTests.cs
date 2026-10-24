@@ -44,6 +44,22 @@ namespace Wigglebites.Tests
             Assert.That(layout.Boost.yMax, Is.LessThanOrEqualTo(100f));
         }
 
+        [Test]
+        public void MenuLayout_KeepsPrimaryActionFirstAndAllButtonsInsidePanel()
+        {
+            var layout = RuntimeHud.CalculateMenuLayout(1080f, 1920f, 82f);
+
+            Assert.That(layout.Panel.Contains(layout.Play.min), Is.True);
+            Assert.That(layout.Panel.Contains(layout.Play.max), Is.True);
+            Assert.That(layout.Panel.Contains(layout.Effects.min), Is.True);
+            Assert.That(layout.Panel.Contains(layout.Effects.max), Is.True);
+            Assert.That(layout.Panel.Contains(layout.Sound.min), Is.True);
+            Assert.That(layout.Panel.Contains(layout.Sound.max), Is.True);
+            Assert.That(layout.Play.yMin, Is.LessThan(layout.Effects.yMin));
+            Assert.That(layout.Play.height, Is.GreaterThanOrEqualTo(82f));
+            Assert.That(layout.Effects.width, Is.EqualTo(layout.Sound.width));
+        }
+
         [TestCase(1f, 0f, "→")]
         [TestCase(0f, 1f, "↑")]
         [TestCase(-1f, 0f, "←")]

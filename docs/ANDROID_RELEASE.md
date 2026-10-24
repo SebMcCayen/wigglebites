@@ -36,7 +36,7 @@ Declare the device model, Android version, chipset, RAM, display resolution/dens
 1. Install a clean build and confirm the menu appears within five seconds after launch.
 2. Play a full three-minute round with 1 player, 19 bots and 350 food objects.
 3. Confirm drag steering, hold-to-boost, pause/resume, death results and replay.
-4. Verify every combat outcome follows the 1.10 mass threshold and no double elimination appears.
+4. Verify every combat outcome follows the 1.10 mass threshold: body bites create candy and leave the head-side snake alive, head bites eliminate, and no double elimination appears.
 5. Check top/bottom cutouts, gesture navigation, 56dp controls and Swedish text at the device's native density.
 6. Toggle sound and reduced effects, restart the app and confirm both settings and best mass persist.
 7. Interrupt the app during play and after results, then resume/relaunch and confirm no corrupt save or frozen state.
@@ -48,4 +48,4 @@ Declare the device model, Android version, chipset, RAM, display resolution/dens
 
 Unity `6000.0.23f1`, its Android tooling and an active Unity Personal entitlement were verified on the current host on 2026-10-22. A validation build completed successfully and produced an ARM64 APK for `com.wigglebites.snakearena` targeting Android 15 / API 35 with a minimum of API 26. The generated manifest requests no Android permissions.
 
-The automated local gate currently passes all 41 EditMode tests and produces the validation APK successfully. An API 35 x86_64 emulator smoke test also verifies menu launch, match start, visible steering direction, active turbo feedback, pause and resume. The generated APKs are local evidence only, use non-release signing and have not completed the physical-device acceptance checklist. Do not label the commit as a release candidate until the checklist above passes with the intended release artifact.
+The last recorded automated baseline passed 41 EditMode tests and produced the validation APK successfully before the segmented-combat and visual refresh. The expanded suite and APK must be rerun with Unity `6000.0.23f1` before this change is treated as validated. An earlier API 35 x86_64 emulator smoke test verified menu launch, match start, visible steering direction, active turbo feedback, pause and resume. The generated APKs are local evidence only, use non-release signing and have not completed the physical-device acceptance checklist. Do not label the commit as a release candidate until the current checklist passes with the intended release artifact.

@@ -3,8 +3,11 @@
 ## Core rules
 - Snake has `mass`, derived `level`, head position, heading, speed and a body path.
 - Start mass 10; 350 active food objects; food yields 1–3 mass.
-- Elimination: if attacker head contacts opponent head/body and `attacker.mass >= defender.mass * 1.10`, defender is eliminated. For mutual head contact, resolve once from the same simulation snapshot; if neither qualifies, both are separated/deflected with a brief cooldown.
-- On elimination, part of defender mass is converted into collectable food; proposed fraction 50%, adjustable. No infinite collision loops; eliminated snakes removed before next simulation step.
+- Combat eligibility: an attacker must have `attacker.mass >= defender.mass * 1.10`. Ineligible contacts deflect with a brief cooldown.
+- Head bite: if an eligible attacker head contacts defender segment 0, the defender is eliminated. Mutual head contacts resolve once from the same simulation snapshot.
+- Body bite: if an eligible attacker head contacts any later segment, that segment and every segment behind it are severed into collectible candy. The defender remains alive with the head-side portion, and its mass/length are reduced proportionally.
+- A body bite briefly deflects the attacker and cools down the survivor, preventing one overlapping contact from consuming several cuts in consecutive ticks. If several bites target one snake in the same snapshot, the closest-to-head bite wins with stable snake ID as the tie-breaker.
+- On head elimination, the configured fraction of defender mass is converted into collectable candy. No infinite collision loops; eliminated snakes are removed before the next simulation step.
 - Rocks and solid crystal bases block movement and cause sliding/deflection, not instant death. Decorative foliage is non-solid. Arena boundary is solid.
 - Boost costs 2 mass/sec while held and above minimum mass.
 
